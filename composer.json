@@ -1,0 +1,12 @@
+{
+    "name": "stepler/php-smq",
+    "description": "Simple Message Queue",
+    "license": "MIT",
+    "authors": [
+        {
+            "name": "Simon Moiseenko",
+            "email": "simon.moiseenko@gmail.com"
+        }
+    ],
+    "require": {}
+}
