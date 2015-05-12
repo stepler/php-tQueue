@@ -2,3 +2,4 @@ composer.phar
 vendor/
 
 .dev_tools
+test/functional/queues
