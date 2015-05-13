@@ -24,7 +24,7 @@ class BrokerManager
             return;
         }
 
-        $brokers_dir = realpath(__DIR__."/Brokers");
+        $brokers_dir = realpath(__DIR__."/Broker");
         if ($brokers_dir === false) {
             throw new Exception("Unable to found directory with Brokers");
         }

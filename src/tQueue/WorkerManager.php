@@ -10,6 +10,13 @@ class WorkerManager
 
     protected $workers_pid = array();
 
+    protected $logger;
+
+    public function __construct()
+    {
+        $this->logger = new Logger();
+    }
+
     public function register($queue, $worker_callback, $options) 
     {
         $options = $this->parseOptions($options);
@@ -24,8 +31,8 @@ class WorkerManager
 
     protected function parseOptions($options)
     {
-        $options["forks"] = 1;
-        $options["interval"] = 5;
+        $options["forks"] = 2;
+        $options["interval"] = 3;
         return $options;
     }
 
@@ -33,24 +40,26 @@ class WorkerManager
     {
         foreach ($this->workers as $worker) {
             for ($i=0; $i<$worker["forks"]; $i++) {
-                $this->startWorker($worker["queue"], $worker["callback"], $worker["options"]);
-                break;
+                $this->launchWorker($worker["queue"], $worker["callback"], $worker["options"]);
             }
         }
+
+        print_r($this->workers_pid);
     }
 
-    protected function startWorker($queue, $callback, $options)
+    protected function launchWorker($queue, $callback, $options)
     {
         $pid = $this->fork();
-        var_dump($pid);
 
-        // if ($pid === -1) {
-        //     exit('Could not fork worker');
-        // }
-        // if ($pid) {
-        //     $this->workers_pid[] = $pid;
-        //     return;
-        // }
+        if ($pid === -1) {
+            $this->logger->warning("Could not fork worker for queue {queue}", array("queue"=>$queue));
+            exit('Could not fork worker');
+        }
+        if ($pid) {
+            $this->logger->info("Launch for queue {queue}", array("queue"=>$queue));
+            $this->workers_pid[] = $pid;
+            return;
+        }
 
         $worker = new Worker($queue, $callback, $options);
         $worker->work();
@@ -58,14 +67,14 @@ class WorkerManager
 
     protected function fork()
     {
-        var_dump(function_exists('pcntl_fork'));
         if (!function_exists('pcntl_fork')) {
+            $this->logger->error("pcntl module does not set");
             return -1;
         }
 
         $pid = pcntl_fork();
         if($pid === -1) {
-            throw new RuntimeException('Unable to fork child worker.');
+            throw new RuntimeException('Unable to fork worker');
         }
 
         return $pid;

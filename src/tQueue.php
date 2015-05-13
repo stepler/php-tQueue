@@ -2,12 +2,15 @@
 
 use tQueue\BrokerManager;
 use tQueue\WorkerManager;
+use tQueue\Logger;
 
 class tQueue 
 {
     protected $broker_manager;
 
     protected $worker_manager;
+    
+    protected $logger;
 
     protected static $config;
 
@@ -29,10 +32,12 @@ class tQueue
             throw new Exception("You must set config before launch");
         }
 
-        $cf = &self::$config;
+        $cfg = &self::$config;
 
-        $this->broker_manager = new BrokerManager($cf["broker"], $cf["broker_settings"]);
+        $this->broker_manager = new BrokerManager($cfg["broker"], $cfg["broker_settings"]);
         $this->worker_manager = new WorkerManager();
+
+        Logger::setVerbose($cfg["log_verbose"]);
     }
 
     public static function setConfig($config)
@@ -51,6 +56,10 @@ class tQueue
 
         if (!isset($config["broker_settings"])) {
             throw new Exception("Unable to found 'broker_settings' option");
+        }
+
+        if (!isset($config["log_verbose"])) {
+            $config["log_verbose"] = false;
         }
 
         self::$config = $config;

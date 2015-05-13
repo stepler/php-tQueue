@@ -6,3 +6,4 @@ tQueue::setConfig(array(
     "broker" => "TestBroker",
     "broker_settings" => array()
 ));
+tQueue::getInstance();

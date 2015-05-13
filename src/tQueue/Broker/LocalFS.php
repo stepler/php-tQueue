@@ -128,7 +128,7 @@ class LocalFS extends Base
 
     protected function rename($old_task_file, $new_task_file)
     {
-        return file_put_contents($old_task_file, $new_task_file);
+        return rename($old_task_file, $new_task_file);
     }
 
     protected function createQueueDir($task_file)

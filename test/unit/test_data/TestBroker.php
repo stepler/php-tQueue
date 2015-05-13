@@ -3,12 +3,16 @@ namespace tQueue\Broker;
 
 class TestBroker extends Base 
 {
+    public static $instance;
+
     public $tasks = array();
 
-    protected function parseConfig($config) 
+    public function __construct($config)
     {
-
+        self::$instance = $this;
     }
+    
+    protected function parseConfig($config) {}
 
     public function find($queue, $status)
     {
@@ -17,7 +21,12 @@ class TestBroker extends Base
 
     public function create($id, $queue, $status, $data) 
     {
-        $task = array($id, $queue, $status, $data);
+        $task = new \stdClass();
+        $task->id = $id;
+        $task->queue = $queue;
+        $task->status = $status;
+        $task->data = $data;
+
         $this->tasks[$id] = $task;
 
         return true;
@@ -26,18 +35,19 @@ class TestBroker extends Base
     public function update($id, $queue, $status) 
     {
         $task = $this->search($id);
-        if ($task) {
+        if (!$task) {
             return false;
         }
 
-        $task[1] = $queue;
-        $task[2] = $status;
+        $task->queue = $queue;
+        $task->status = $status;
+
         $this->tasks[$id] = $task;
 
         return true;
     }
 
-    protected function search($id=null, $queue=null, $status=null)
+    public function search($id=null, $queue=null, $status=null)
     {
         if ($id) {
             if (empty($this->tasks[$id])) {
@@ -48,10 +58,10 @@ class TestBroker extends Base
 
         foreach ($this->tasks as $id => $task) 
         {
-            if ($queue && $queue != $task[1]) {
+            if ($queue && $queue != $task->queue) {
                 continue;
             }
-            if ($status && $status != $task[2]) {
+            if ($status && $status != $task->status) {
                 continue;
             }
             return $task;

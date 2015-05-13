@@ -1,13 +1,11 @@
 <?php
-use STQ\TQ;
-
-require __DIR__."/../bootstrap.php";
+require __DIR__."/../../vendor/autoload.php";
 require __DIR__."/config.php";
 
-TQ::setConfig($config);
+tQueue::setConfig($config);
 
-TQ::register_worker("default", function($task) {
+tQueue::register_worker("default", function($task) {
     $task->complete();
 });
 
-TQ::launch_workers();
+tQueue::launch_workers();
