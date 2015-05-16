@@ -12,68 +12,70 @@ class WorkerManager
 
     protected $logger;
 
-    public function __construct()
+    public function __construct($config)
     {
-        $this->logger = new Logger();
+        $this->config = $config;
     }
 
-    public function register($queue, $worker_callback, $options) 
+    public function setLogger($logger)
     {
-        $options = $this->parseOptions($options);
-
-        $this->workers[] = array(
-            "forks" => $options["forks"],
-            "queue" => $queue,
-            "callback" => $worker_callback,
-            "options" => $options
-        );
+        $this->logger = $logger;
     }
 
-    protected function parseOptions($options)
+    protected function getWorkers()
     {
-        $options["forks"] = 2;
-        $options["interval"] = 3;
-        return $options;
+        if (empty($this->workers)) {
+            $loader = new WorkerLoader($this->config["workers_dir"]);
+            $this->workers = $loader->getWorkers();
+        }
+
+        return $this->workers;
+    }
+
+    protected function getForksOfWorker($workerClass)
+    {
+        $w = new $workerClass();
+        $forks = $w->getForks();
+        unset($w);
+        if (!intval($forks)) {
+            throw new Exception("Invalid forks value in {$workerClass} class.");
+        }
+        return $forks;
     }
 
     public function launch()
     {
-        foreach ($this->workers as $worker) {
-            for ($i=0; $i<$worker["forks"]; $i++) {
-                $this->launchWorker($worker["queue"], $worker["callback"], $worker["options"]);
+        $workers = $this->getWorkers();
+
+        foreach ($workers as $workerClass)
+        {
+            $forks = $this->getForksOfWorker($workerClass);
+            for ($i=0; $i<$forks; $i++)
+            {
+                $pid = self::fork();
+                if ($pid === 0) {
+                    $w = new $workerClass();
+                    $w->setLogger($this->logger);
+                    $w->run();
+                    break;
+                }
+                echo "{$pid}\n";
             }
         }
 
-        print_r($this->workers_pid);
+        // print_r($ this->workers_pid);
     }
 
-    protected function launchWorker($queue, $callback, $options)
-    {
-        $pid = $this->fork();
-
-        if ($pid === -1) {
-            $this->logger->warning("Could not fork worker for queue {queue}", array("queue"=>$queue));
-            exit('Could not fork worker');
-        }
-        if ($pid) {
-            $this->logger->info("Launch for queue {queue}", array("queue"=>$queue));
-            $this->workers_pid[] = $pid;
-            return;
-        }
-
-        $worker = new Worker($queue, $callback, $options);
-        $worker->work();
-    }
 
     protected function fork()
     {
         if (!function_exists('pcntl_fork')) {
-            $this->logger->error("pcntl module does not set");
+            // $this->logger->error("pcntl module does not set");
             return -1;
         }
 
         $pid = pcntl_fork();
-        if($pid === -1) {
+        if ($pid === -1) {
             throw new RuntimeException('Unable to fork worker');
         }
 

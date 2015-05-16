@@ -8,8 +8,11 @@ class BrokerManager
 {
     protected $broker;
 
-    public function __construct($broker_class, $broker_settings)
+    public function __construct($config)
     {
+        $broker_class = $config["broker"];
+        $broker_settings = $config["settings"];
+
         $this->loadBroker($broker_class);
         
         $ns_broker_class = '\\tQueue\\Broker\\'.$broker_class;

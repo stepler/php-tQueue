@@ -3,3 +3,5 @@ vendor/
 
 .dev_tools
 test/functional/queues
+*.log
+*.ini

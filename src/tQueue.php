@@ -2,64 +2,80 @@
 
 use tQueue\BrokerManager;
 use tQueue\WorkerManager;
+use tQueue\WorkerLoader;
+use tQueue\Tools;
+use tQueue\Worker;
 use tQueue\Logger;
 
 class tQueue 
 {
-    protected $broker_manager;
-
-    protected $worker_manager;
+    protected static $broker_manager;
+    protected static $worker_manager;
+    protected static $logger;
     
-    protected $logger;
-
     protected static $config;
 
     protected static $instance;
 
-    public static function getInstance()
+    public static function getBrokerManager()
     {
-        if (!static::$instance) {
-            $class = get_called_class();
-            static::$instance = new $class();
+        self::checkConfig();
+        if (!static::$broker_manager) {
+            static::$broker_manager = new BrokerManager(self::$config["broker"]);
         }
-
-        return static::$instance;
+        return static::$broker_manager;
     }
 
-    private function __construct()
+    public static function getWorkerManager()
+    {
+        self::checkConfig();
+
+        if (!static::$worker_manager) {
+            $logger = self::getLogger();
+
+            static::$worker_manager = new WorkerManager(self::$config["workers"]);
+            static::$worker_manager->setLogger($logger);
+        }
+
+        return static::$worker_manager;
+    }
+
+    public static function getLogger()
+    {
+        self::checkConfig();
+        if (!static::$logger) {
+            static::$logger = new Logger(self::$config["logger"]);
+        }
+        return static::$logger;
+    }
+
+    protected static function checkConfig()
     {
         if (empty(self::$config)) {
-            throw new Exception("You must set config before launch");
+            throw new Exception("You must set config 'tQueue::setConfig(...)' before using tQueue functions");
         }
+    }  
 
-        $cfg = &self::$config;
-
-        $this->broker_manager = new BrokerManager($cfg["broker"], $cfg["broker_settings"]);
-        $this->worker_manager = new WorkerManager();
-
-        Logger::setVerbose($cfg["log_verbose"]);
-    }
-
-    public static function setConfig($config)
+    public static function setConfig($config_file)
     {
         if (!empty(self::$config)) {
             return;
         }
 
-        if (!is_array($config)) {
-            throw new Exception("Config must be an array");
+        if (!file_exists($config_file) || !is_readable($config_file)) {
+            throw new Exception("Invalid config file");
         }
+
+        $config = parse_ini_file($config_file, true);
 
         if (empty($config["broker"])) {
-            throw new Exception("Unable to found 'broker' option");
+            throw new Exception("Unable to found broker settings in config '{$config_file}'");
         }
-
-        if (!isset($config["broker_settings"])) {
-            throw new Exception("Unable to found 'broker_settings' option");
+        if (!isset($config["workers"])) {
+            throw new Exception("Unable to found workers settings in config '{$config_file}'");
         }
-
-        if (!isset($config["log_verbose"])) {
-            $config["log_verbose"] = false;
+        if (!isset($config["logger"])) {
+            throw new Exception("Unable to found logger settings in config '{$config_file}'");
         }
 
         self::$config = $config;
@@ -67,36 +83,44 @@ class tQueue
 
     public static function add($queue, $data)
     {
-        $_this = self::getInstance();
-        $_this->validate_queue($queue);
+        Tools::validateQueue($queue);
+        $bm = self::getBrokerManager();
 
-        return $_this->broker_manager->add($queue, $data);
+        return $bm->add($queue, $data);
     }
 
     public static function process($queue)
     {
-        $_this = self::getInstance();
-        $_this->validate_queue($queue);
+        Tools::validateQueue($queue);
+        $bm = self::getBrokerManager();
 
-        return $_this->broker_manager->process($queue);
+        return $bm->process($queue);
     }
 
-    public static function register_worker($queue, $worker_callback, $options=array())
+    public static function getWorkers()
     {
-        $_this = self::getInstance();
-        $_this->worker_manager->register($queue, $worker_callback, $options);
+        $wl = self::getWorkerLoader();
+        return $wl->getWorkers();
     }
 
-    public static function launch_workers()
+    public static function launchWorkers()
     {
-        $_this = self::getInstance();
-        $_this->worker_manager->launch();
+        $wm = self::getWorkerManager();
+        $wm->launch();
     }
 
-    protected function validate_queue($queue_name)
+    public static function fork()
     {
-        if (preg_match('/[^\w]/', $queue_name) !== 0) {
-            throw new Exception("Invalid queue name {$queue_name}");
+        if (!function_exists('pcntl_fork')) {
+            return -1;
         }
+
+        $pid = pcntl_fork();
+        if($pid === -1) {
+            throw new RuntimeException('Unable to fork worker');
+        }
+
+        return $pid;
     }
+
 }

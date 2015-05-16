@@ -4,29 +4,36 @@ use Psr;
 
 class Logger extends Psr\Log\AbstractLogger  
 {
-    protected static $verbose = false;
+    protected $verbose = false;
+    protected $handle;
 
-    public static function setVerbose($value)
+    public function __construct($config)
     {
-        self::$verbose = !!$value;
+        if (!empty($config["log_verbose"])) {
+            $this->verbose = true;
+        }
+
+        if (isset($config["log_file"])) {
+            $this->handle = fopen($config["log_file"], "c");
+        }
+
+        if (empty($this->handle)) {
+            $this->handle = STDOUT;
+        }
     }
 
-    public function log($level, $message, array $context = array())
+    public function log($level, $message, array $context=array())
     {
-        if (self::$verbose) {
-            fwrite(
-                STDOUT,
-                '[' . $level . '] [' . strftime('%T %Y-%m-%d') . '] ' . $this->interpolate($message, $context) . PHP_EOL
-            );
+        if (!$this->verbose &&
+            $level == Psr\Log\LogLevel::DEBUG) {
             return;
         }
+        fwrite($this->handle,
+            '['.$level.'] ['.strftime('%T %Y-%m-%d').'] '.$this->interpolate($message, $context).PHP_EOL);
+    }
 
-        if (!($level === Psr\Log\LogLevel::INFO || $level === Psr\Log\LogLevel::DEBUG)) {
-            fwrite(
-                STDOUT,
-                '[' . $level . '] ' . $this->interpolate($message, $context) . PHP_EOL
-            );
-        }
+    public function debug($message, array $context = array()) {
+        $this->log(Psr\Log\LogLevel::DEBUG, $message, $context);
     }
 
     public function info($message, array $context = array()) {
