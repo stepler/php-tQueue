@@ -12,6 +12,7 @@ class Worker
     protected $logger;
 
     protected $forks;
+    protected $name;
 
     public function __construct()
     {
@@ -26,6 +27,14 @@ class Worker
     final public function getForks()
     {
         return $this->forks;
+    }
+
+    final public function getName()
+    {
+        if (!empty($this->name)) {
+            return $this->name;
+        }
+        return __CLASS__;
     }
 
     public function work()
@@ -58,7 +67,7 @@ class Worker
             $this->process($task);
             $this->logger->info("Task {task_id} is processed", array("task_id"=>$task->getId()));
         }
-        catch(Exception $e) {
+        catch (Exception $e) {
             $this->logger->error("Task {task_id} throw error: {error}", 
                 array("task_id"=>$task->getId(), "error"=>$task->getMessage()));
         }

@@ -103,10 +103,16 @@ class tQueue
         return $wl->getWorkers();
     }
 
-    public static function launchWorkers()
+    public static function startWorkers()
     {
         $wm = self::getWorkerManager();
-        $wm->launch();
+        $wm->start();
+    }
+
+    public static function stopWorkers()
+    {
+        $wm = self::getWorkerManager();
+        $wm->stop();
     }
 
     public static function fork()

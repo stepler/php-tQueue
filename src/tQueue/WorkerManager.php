@@ -3,18 +3,22 @@ namespace tQueue;
 
 use Exception;
 use RuntimeException;
+use tQueue\Worker\Pid;
 
 class WorkerManager
 {
     protected $workers = array();
+    protected $pid_files = array();
 
-    protected $workers_pid = array();
+    protected $pid;
 
     protected $logger;
 
     public function __construct($config)
     {
+        // TODO Vadidate config
         $this->config = $config;
+        $this->pid = new Pid($config["pids_dir"]);
     }
 
     public function setLogger($logger)
@@ -26,52 +30,107 @@ class WorkerManager
     {
         if (empty($this->workers)) {
             $loader = new WorkerLoader($this->config["workers_dir"]);
-            $this->workers = $loader->getWorkers();
+            $workers = $loader->getWorkers();
+            $this->workers = $this->getWorkersInfo($workers);
+
+            $this->pid->setWorkers($this->workers);
         }
 
         return $this->workers;
     }
 
-    protected function getForksOfWorker($workerClass)
+    protected function getWorkersInfo($workers)
     {
-        $w = new $workerClass();
-        $forks = $w->getForks();
-        unset($w);
-        if (!intval($forks)) {
-            throw new Exception("Invalid forks value in {$workerClass} class.");
+        $result = array();
+        foreach ($workers as $workerClass)
+        {
+            $w = new $workerClass();
+            $result[] = array(
+                "class_name" => $workerClass,
+                "forks" => $w->getForks(),
+                "name" => $w->getName()
+            );
+            unset($w);
         }
-        return $forks;
+
+        return $result;
     }
 
-    public function launch()
+    protected function stopZombie()
+    {
+        $list = $this->pid->getZombiePids();
+        foreach ($list as $pid) {
+            $this->stopByPid($pid);
+        }
+    }
+
+    public function stop()
+    {
+        $list = $this->pid->getAll();
+        foreach ($list as $pid) {
+            $this->stopByPid($pid);
+        }
+    }
+
+    protected function stopByPid($pid)
+    {
+        $status = $this->statusByPid($pid);
+        if ($status) {
+            posix_kill($pid, SIGQUIT);
+        }
+        $this->pid->remove($pid);
+    }
+
+    protected function statusByPid($pid)
+    {
+        exec("ps -o pid,state -p {$pid}", $output, $returnCode);
+        return $returnCode === 0;
+    }
+
+    protected function status($worker_name, $fork=1)
+    {
+        $pid = $this->pid->getByWorker($worker_name, $fork);
+        return $this->statusByPid($pid);
+    }
+
+    public function start()
     {
         $workers = $this->getWorkers();
 
-        foreach ($workers as $workerClass)
+        $this->stopZombie($workers);
+
+        foreach ($workers as $worker)
         {
-            $forks = $this->getForksOfWorker($workerClass);
-            for ($i=0; $i<$forks; $i++)
+            $worker_name = $worker["name"];
+            $worker_class = $worker["class_name"];
+            $worker_forks = $worker["forks"];
+
+            for ($fork=1; $fork<=$worker_forks; $fork++)
             {
+                if ($this->status($worker_name, $fork)) {
+                    continue;
+                }
+
                 $pid = self::fork();
-                if ($pid === 0) {
-                    $w = new $workerClass();
+                if ($pid > 0) {
+                    $this->pid->add($pid, $worker_name, $fork);
+                }
+                else {
+                    $w = new $worker_class();
                     $w->setLogger($this->logger);
                     $w->run();
                     break;
                 }
-                echo "{$pid}\n";
+                $this->logger->debug("New worker PID: {$pid}");
             }
         }
-
-        // print_r($ this->workers_pid);
     }
 
 
     protected function fork()
     {
         if (!function_exists('pcntl_fork')) {
-            // $this->logger->error("pcntl module does not set");
-            return -1;
+            throw new RuntimeException('PCNTL module does not set');
         }
 
         $pid = pcntl_fork();
