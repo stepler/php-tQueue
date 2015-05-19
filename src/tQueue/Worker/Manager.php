@@ -1,11 +1,12 @@
 <?php
-namespace tQueue;
+namespace tQueue\Worker;
 
 use Exception;
 use RuntimeException;
 use tQueue\Worker\Pid;
+use tQueue\Worker\Loader;
 
-class WorkerManager
+class Manager
 {
     protected $workers = array();
     protected $pid_files = array();
@@ -29,7 +30,7 @@ class WorkerManager
     protected function getWorkers()
     {
         if (empty($this->workers)) {
-            $loader = new WorkerLoader($this->config["workers_dir"]);
+            $loader = new Loader($this->config["workers_dir"]);
             $workers = $loader->getWorkers();
             $this->workers = $this->getWorkersInfo($workers);
 

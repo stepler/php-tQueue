@@ -1,11 +1,11 @@
 <?php
-namespace tQueue;
+namespace tQueue\Worker;
 
 use Exception;
 use RuntimeException;
 use InvalidArgumentException;
 
-class WorkerLoader
+class Loader
 {
     protected $workers_dir;
 

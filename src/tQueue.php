@@ -1,7 +1,7 @@
 <?php
 
 use tQueue\BrokerManager;
-use tQueue\WorkerManager;
+use tQueue\Worker\Manager as WorkerManager;
 use tQueue\WorkerLoader;
 use tQueue\Tools;
 use tQueue\Worker;
@@ -128,5 +128,4 @@ class tQueue
 
         return $pid;
     }
-
 }

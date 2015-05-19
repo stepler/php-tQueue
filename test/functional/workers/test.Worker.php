@@ -1,6 +1,6 @@
 <?php
 
-class ParseSomething_Worker extends tQueue\Worker
+class ParseSomething_Worker extends tQueue\Worker\Worker
 {
     protected $forks = 2;
 
@@ -8,7 +8,8 @@ class ParseSomething_Worker extends tQueue\Worker
 
     public function process($task)
     {
+        var_dump($task->getData());
+        $this->logger->info("i do my work");
         $task->complete();
-        echo "i do my work";
     }
 }

@@ -1,5 +1,5 @@
 <?php
-namespace tQueue;
+namespace tQueue\Worker;
 
 class Worker 
 {
