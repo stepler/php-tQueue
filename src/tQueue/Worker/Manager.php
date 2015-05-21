@@ -112,7 +112,7 @@ class Manager
                     continue;
                 }
 
-                $pid = self::fork();
+                $pid = \tQueue::fork();
                 if ($pid > 0) {
                     $this->pid->add($pid, $worker_name, $fork);
                 }
@@ -125,20 +125,5 @@ class Manager
                 $this->logger->debug("New worker PID: {$pid}");
             }
         }
-    }
-
-
-    protected function fork()
-    {
-        if (!function_exists('pcntl_fork')) {
-            throw new RuntimeException('PCNTL module does not set');
-        }
-
-        $pid = pcntl_fork();
-        if ($pid === -1) {
-            throw new RuntimeException('Unable to fork worker');
-        }
-
-        return $pid;
     }
 }

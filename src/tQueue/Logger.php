@@ -14,7 +14,7 @@ class Logger extends Psr\Log\AbstractLogger
         }
 
         if (isset($config["log_file"])) {
-            $this->handle = fopen($config["log_file"], "c");
+            $this->handle = fopen($config["log_file"], "a");
         }
 
         if (empty($this->handle)) {

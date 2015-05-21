@@ -16,7 +16,7 @@ class Worker
 
     public function __construct()
     {
-
+        $this->stat = \tQueue::stat()->getClient();
     }
 
     final public function setLogger($logger)
@@ -34,7 +34,7 @@ class Worker
         if (!empty($this->name)) {
             return $this->name;
         }
-        return __CLASS__;
+        return get_class($this);
     }
 
     public function work()
@@ -64,10 +64,15 @@ class Worker
 
         $task->running();
         try {
-            $this->process($task);
+            $result = $this->process($task->getId(), $task->getData());
+            $task->complete($result);
+            $this->stat->send($task->getQueue(), $this->getName(), $task->getStatus());
             $this->logger->info("Task {task_id} is processed", array("task_id"=>$task->getId()));
         }
         catch (Exception $e) {
+            $task->failed();
+            $this->stat->send($task->getQueue(), $this->getName(), $task->getStatus());
+
             $this->logger->error("Task {task_id} throw error: {error}", 
                 array("task_id"=>$task->getId(), "error"=>$task->getMessage()));
         }

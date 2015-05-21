@@ -9,4 +9,9 @@ class Tools
             throw new Exception("Invalid queue name {$queue_name}");
         }
     }
+
+    public static function killProcess($pid)
+    {
+        exec("kill -9 {$pid}");
+    }
 }

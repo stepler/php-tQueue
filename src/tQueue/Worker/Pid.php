@@ -1,6 +1,8 @@
 <?php
 namespace tQueue\Worker;
 
+use tQueue\Tools;
+
 class Pid 
 {
     protected $workers;
@@ -40,7 +42,7 @@ class Pid
     {
         @$content = file_get_contents($filename);
         if (empty($content)) {
-            throw new Exception("Unable to get content from file");
+            throw new Exception("Unable to get PID from file");
         }
         return $content;
     }
@@ -83,7 +85,11 @@ class Pid
     public function add($pid, $worker_name, $fork)
     {
         $filename = $this->makePidfileName($worker_name, $fork, true);
-        file_put_contents($filename, $pid);
+        $result = file_put_contents($filename, $pid);
+        if ($result === false) {
+            Tools::killProcess($pid);
+            throw new Exception("Unable to save PID to {$filename}");
+        }
         $this->pids[$filename] = $pid;
     }
 

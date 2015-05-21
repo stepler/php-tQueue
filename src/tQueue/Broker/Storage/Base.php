@@ -1,5 +1,5 @@
 <?php
-namespace tQueue\Broker;
+namespace tQueue\Broker\Storage;
 
 abstract class Base 
 {

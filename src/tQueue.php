@@ -1,7 +1,8 @@
 <?php
 
-use tQueue\BrokerManager;
+use tQueue\Broker\Manager as BrokerManager;
 use tQueue\Worker\Manager as WorkerManager;
+use tQueue\Statistics\Manager as StatisticsManager;
 use tQueue\WorkerLoader;
 use tQueue\Tools;
 use tQueue\Worker;
@@ -11,6 +12,7 @@ class tQueue
 {
     protected static $broker_manager;
     protected static $worker_manager;
+    protected static $stat_manager;
     protected static $logger;
     
     protected static $config;
@@ -38,6 +40,20 @@ class tQueue
         }
 
         return static::$worker_manager;
+    }
+
+    public static function getStatManager()
+    {
+        self::checkConfig();
+
+        if (!static::$stat_manager) {
+            $logger = self::getLogger();
+
+            static::$stat_manager = new StatisticsManager(self::$config["stat"]);
+            static::$stat_manager->setLogger($logger);
+        }
+
+        return static::$stat_manager;
     }
 
     public static function getLogger()
@@ -113,6 +129,28 @@ class tQueue
     {
         $wm = self::getWorkerManager();
         $wm->stop();
+    }
+
+    public static function startStatServer()
+    {
+        $server = self::getStatManager();
+        $server->start();
+    }
+
+    public static function stopStatServer()
+    {
+        $server = self::getStatManager();
+        $server->stop();
+    }
+
+    public static function stat()
+    {
+        return self::getStatManager();
+    }
+
+    public static function statData()
+    {
+        return self::getStatManager()->getData();
     }
 
     public static function fork()

@@ -1,12 +1,14 @@
 <?php
-namespace tQueue;
+namespace tQueue\Broker;
 
 use Exception;
-use tQueue\Broker;
+use tQueue\Broker\Storage;
+use tQueue\Task;
 
-class BrokerManager
+class Manager
 {
     protected $broker;
+    protected $stat;
 
     public function __construct($config)
     {
@@ -15,13 +17,15 @@ class BrokerManager
 
         $this->loadBroker($broker_class);
         
-        $ns_broker_class = '\\tQueue\\Broker\\'.$broker_class;
+        $ns_broker_class = '\\tQueue\\Broker\\Storage\\'.$broker_class;
         $this->broker = new $ns_broker_class($broker_settings);
+
+        $this->stat = \tQueue::stat()->getClient();
     }
 
     protected function loadBroker($broker_class)
     {
-        $ns_broker_class = '\\tQueue\\Broker\\'.$broker_class;
+        $ns_broker_class = '\\tQueue\\Broker\\Storage\\'.$broker_class;
 
         if (class_exists($ns_broker_class)) {
             return;
@@ -68,16 +72,19 @@ class BrokerManager
 
     protected function generateId()
     {
-        return uniqid();
+        return md5(uniqid("", true));
     }
 
     public function add($queue, $data)
     {
         $task = $this->createTask($queue, $data);
         $this->broker->create($task->getId(), $task->getQueue(), $task->getStatus(), $task->getData());
+
+        $this->stat->send($task->getQueue(), null, $task->getStatus());
         
         return $task;
     }
+
 
     public function process($queue)
     {

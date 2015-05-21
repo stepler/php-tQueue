@@ -1,9 +1,7 @@
 <?php
-namespace tQueue\Broker;
+namespace tQueue\Broker\Storage;
 
 use Exception;
-
-require __DIR__."/Base.php";
 
 class LocalFS extends Base
 {
