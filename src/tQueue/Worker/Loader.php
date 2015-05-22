@@ -17,10 +17,10 @@ class Loader
         if (empty($workers_dir) ||
             !file_exists($workers_dir) ||
             !is_dir($workers_dir)) {
-            throw new InvalidArgumentException("Invalid workers_dir: {$workers_dir}");
+            throw new \InvalidArgumentException("Invalid workers_dir: {$workers_dir}");
         }
         if (!is_readable($workers_dir)) {
-            throw new InvalidArgumentException("Workers dir is not readable");
+            throw new \InvalidArgumentException("Workers dir is not readable");
         }
         $this->workers_dir = $workers_dir;
     }

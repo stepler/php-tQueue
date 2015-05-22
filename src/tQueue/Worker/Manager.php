@@ -1,12 +1,10 @@
 <?php
 namespace tQueue\Worker;
 
-use Exception;
-use RuntimeException;
 use tQueue\Worker\Pid;
 use tQueue\Worker\Loader;
 
-class Manager
+class Manager extends \tQueue\Base\Manager
 {
     protected $workers = array();
     protected $pid_files = array();
@@ -15,16 +13,13 @@ class Manager
 
     protected $logger;
 
-    public function __construct($config)
+    public function parseConfig($config)
     {
         // TODO Vadidate config
         $this->config = $config;
         $this->pid = new Pid($config["pids_dir"]);
-    }
 
-    public function setLogger($logger)
-    {
-        $this->logger = $logger;
+        $this->logger = $this->tQueue->logger;
     }
 
     protected function getWorkers()
@@ -45,7 +40,7 @@ class Manager
         $result = array();
         foreach ($workers as $workerClass)
         {
-            $w = new $workerClass();
+            $w = new $workerClass(null, null, null);
             $result[] = array(
                 "class_name" => $workerClass,
                 "forks" => $w->getForks(),
@@ -117,8 +112,12 @@ class Manager
                     $this->pid->add($pid, $worker_name, $fork);
                 }
                 else {
-                    $w = new $worker_class();
-                    $w->setLogger($this->logger);
+                    $w = new $worker_class(
+                        $this->tQueue->broker,
+                        $this->tQueue->logger, 
+                        $this->tQueue->stat->getClient()
+                    );
+
                     $w->run();
                     break;
                 }

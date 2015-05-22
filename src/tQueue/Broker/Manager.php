@@ -1,26 +1,32 @@
 <?php
 namespace tQueue\Broker;
 
-use Exception;
-use tQueue\Broker\Storage;
 use tQueue\Task;
 
-class Manager
+
+class Manager extends \tQueue\Base\Manager
 {
     protected $broker;
     protected $stat;
 
-    public function __construct($config)
-    {
-        $broker_class = $config["broker"];
-        $broker_settings = $config["settings"];
+    protected $config;
 
+    protected function parseConfig($config) 
+    {
+        $this->config = $config;
+    }
+
+    public function on_construct()
+    {
+        $broker_class = $this->config["broker"];
+        $broker_settings = $this->config["settings"];
         $this->loadBroker($broker_class);
         
         $ns_broker_class = '\\tQueue\\Broker\\Storage\\'.$broker_class;
+
         $this->broker = new $ns_broker_class($broker_settings);
 
-        $this->stat = \tQueue::stat()->getClient();
+        $this->stat = $this->tQueue->stat->getClient();
     }
 
     protected function loadBroker($broker_class)
@@ -31,23 +37,22 @@ class Manager
             return;
         }
 
-        $brokers_dir = realpath(__DIR__."/Broker");
-        if ($brokers_dir === false) {
-            throw new Exception("Unable to found directory with Brokers");
-        }
-
-        $search_broker_file = strtolower($broker_class);
-        $brokers_list = scandir($brokers_dir);
-        foreach ($brokers_list as $broker_file) {
-            $req_broker_file = strtolower(basename($broker_file, ".php"));
-            if ($search_broker_file === $req_broker_file)  {
-                require $brokers_dir.DIRECTORY_SEPARATOR.$broker_file;
+        $search_filename = strtolower($broker_class);
+        $files = glob(__DIR__."/Storage/*.php");
+        foreach ($files as $file) {
+            var_dump($search_filename, pathinfo($file, PATHINFO_FILENAME));
+            if ($search_filename === pathinfo($file, PATHINFO_FILENAME))  {
+                require $file;
                 break;
             }
         }
+        var_dump($files);
+        var_dump($search_filename);
+        // print_r(get_declared_classes()); 
+        exit();
 
         if (!class_exists($ns_broker_class)) {
-            throw new Exception("Unable to load Broker '{$broker_class}'");
+            throw new \Exception("Unable to load Broker '{$broker_class}'");
         }
     }
 

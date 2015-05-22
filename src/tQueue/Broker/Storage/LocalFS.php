@@ -95,7 +95,6 @@ class LocalFS extends Base
 
     protected function unpackData($data)
     {
-        // @$content = 
         return (@unserialize($data));
     }
 

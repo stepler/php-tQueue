@@ -1,6 +1,8 @@
 <?php
 namespace tQueue\Worker;
 
+use tQueue\Helper\Tools;
+
 class Worker 
 {
     protected $queue;
@@ -11,17 +13,19 @@ class Worker
 
     protected $logger;
 
+    protected $broker;
+
     protected $forks;
+
     protected $name;
 
-    public function __construct()
+    final public function __construct($broker, $logger, $stat_client)
     {
-        $this->stat = \tQueue::stat()->getClient();
-    }
+        Tools::validateWorkerName($this->getName());
 
-    final public function setLogger($logger)
-    {
+        $this->broker = $broker;
         $this->logger = $logger;
+        $this->stat = $stat_client;
     }
 
     final public function getForks()
@@ -55,7 +59,7 @@ class Worker
 
     protected function get_work()
     {
-        return \tQueue::process($this->queue);
+        return $this->broker->process($this->queue);
     }
 
     protected function do_work($task)

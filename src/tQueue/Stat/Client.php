@@ -1,5 +1,5 @@
 <?php
-namespace tQueue\Statistics;
+namespace tQueue\Stat;
 
 class Client 
 {
@@ -12,9 +12,9 @@ class Client
 
     public function send($queue, $worker, $type)
     {
-        $socket = stream_socket_client($this->host, $errno, $errstr, 2);
+        @$socket = stream_socket_client($this->host, $errno, $errstr, 2);
         if (!$socket) {
-            $this->logger->error("Unable to send statistic: ({$errno}) {$errstr}");
+            // $this->logger->error("Unable to send statistic: ({$errno}) {$errstr}");
             return false;
         }
 

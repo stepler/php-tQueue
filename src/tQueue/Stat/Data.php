@@ -1,5 +1,5 @@
 <?php
-namespace tQueue\Statistics;
+namespace tQueue\Stat;
 
 use tQueue\Task;
 
@@ -50,5 +50,25 @@ class Data
     public function getArray()
     {
         return $this->data;
+    }
+
+    public function printTable()
+    {
+        $draw_data = array();
+        foreach ($this->data as $queue => $data) {
+            $row = array(
+                $queue,
+                implode(",", $data["workers"])
+            );
+            $row = array_merge($row, $data["tasks"]);
+
+            $draw_data[] = $row;
+        }
+
+        $table = new \Console_Table();
+        $table->setHeaders(array("QUEUES", "WORKERS", 
+            "TASK ".Task::STATUS_WAITING, "TASK ".Task::STATUS_COMPLETE, "TASK ".Task::STATUS_FAILED));
+        $table->addData($draw_data);
+        echo $table->getTable();
     }
 }

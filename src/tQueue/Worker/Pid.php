@@ -42,7 +42,7 @@ class Pid
     {
         @$content = file_get_contents($filename);
         if (empty($content)) {
-            throw new Exception("Unable to get PID from file");
+            throw new Exception("Unable to get PID from {$filename}");
         }
         return $content;
     }

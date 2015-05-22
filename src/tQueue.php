@@ -1,167 +1,130 @@
 <?php
 
-use tQueue\Broker\Manager as BrokerManager;
-use tQueue\Worker\Manager as WorkerManager;
-use tQueue\Statistics\Manager as StatisticsManager;
-use tQueue\WorkerLoader;
-use tQueue\Tools;
-use tQueue\Worker;
-use tQueue\Logger;
+use tQueue\Config;
+use tQueue\Helper\Set;
 
 class tQueue 
 {
-    protected static $broker_manager;
-    protected static $worker_manager;
-    protected static $stat_manager;
-    protected static $logger;
-    
-    protected static $config;
+    protected $config;
 
-    protected static $instance;
+    protected $container;
+    protected $name;
 
-    public static function getBrokerManager()
+    protected static $instances = array();
+
+    protected function __construct($name, $config_data)
     {
-        self::checkConfig();
-        if (!static::$broker_manager) {
-            static::$broker_manager = new BrokerManager(self::$config["broker"]);
+        if (!function_exists('pcntl_fork')) {
+            throw new \RuntimeException('PCNTL extension is not installed');
         }
-        return static::$broker_manager;
+
+        $this->name = $name;
+
+        $this->container = new Set();
+
+        $this->container["config"] = new Config($config_data);
+        $this->container["tQueue"] = $this;
+
+        $this->container->singleton("logger", function($c) {
+            return new \tQueue\Logger($c->config->logger);
+        });
+
+        $this->container->singleton("stat", function($c) {
+            return new \tQueue\Stat\Manager($c->tQueue, $c->config->stat);
+        });
+
+        $this->container->singleton("broker", function($c) {
+            return new \tQueue\Broker\Manager($c->tQueue, $c->config->broker);
+        });
+
+        $this->container->singleton("worker", function($c) {
+            return new \tQueue\Worker\Manager($c->tQueue, $c->config->workers);
+        });
+
+        self::$instances[$this->name] = $this;
     }
 
-    public static function getWorkerManager()
+    public static function get($name="default")
     {
-        self::checkConfig();
-
-        if (!static::$worker_manager) {
-            $logger = self::getLogger();
-
-            static::$worker_manager = new WorkerManager(self::$config["workers"]);
-            static::$worker_manager->setLogger($logger);
+        if (isset(self::$instances[$name])) {
+            return self::$instances[$name];
         }
-
-        return static::$worker_manager;
+        return null;
     }
 
-    public static function getStatManager()
+    public static function create($name_or_config_data, $config_data=null)
     {
-        self::checkConfig();
-
-        if (!static::$stat_manager) {
-            $logger = self::getLogger();
-
-            static::$stat_manager = new StatisticsManager(self::$config["stat"]);
-            static::$stat_manager->setLogger($logger);
+        $name = $name_or_config_data;
+        if (empty($config_file)) {
+            $name = "default";
+            $config_data = $name_or_config_data;
         }
 
-        return static::$stat_manager;
+        return new self($name, $config_data);
     }
 
-    public static function getLogger()
+    public function __get($name)
     {
-        self::checkConfig();
-        if (!static::$logger) {
-            static::$logger = new Logger(self::$config["logger"]);
-        }
-        return static::$logger;
+        return $this->container[$name];
     }
 
-    protected static function checkConfig()
+    public function __isset($name)
     {
-        if (empty(self::$config)) {
-            throw new Exception("You must set config 'tQueue::setConfig(...)' before using tQueue functions");
-        }
-    }  
-
-    public static function setConfig($config_file)
-    {
-        if (!empty(self::$config)) {
-            return;
-        }
-
-        if (!file_exists($config_file) || !is_readable($config_file)) {
-            throw new Exception("Invalid config file");
-        }
-
-        $config = parse_ini_file($config_file, true);
-
-        if (empty($config["broker"])) {
-            throw new Exception("Unable to found broker settings in config '{$config_file}'");
-        }
-        if (!isset($config["workers"])) {
-            throw new Exception("Unable to found workers settings in config '{$config_file}'");
-        }
-        if (!isset($config["logger"])) {
-            throw new Exception("Unable to found logger settings in config '{$config_file}'");
-        }
-
-        self::$config = $config;
+        return isset($this->container[$name]);
     }
 
-    public static function add($queue, $data)
+    public function add($queue, $data)
     {
-        Tools::validateQueue($queue);
-        $bm = self::getBrokerManager();
-
-        return $bm->add($queue, $data);
+        \tQueue\Helper\Tools::validateQueueName($queue);
+        return $this->broker->add($queue, $data);
     }
 
-    public static function process($queue)
+    public function process($queue)
     {
-        Tools::validateQueue($queue);
-        $bm = self::getBrokerManager();
-
-        return $bm->process($queue);
+        \tQueue\Helper\Tools::validateQueueName($queue);
+        return $this->broker->process($queue);
     }
 
     public static function getWorkers()
     {
-        $wl = self::getWorkerLoader();
-        return $wl->getWorkers();
+        return $this->worker->getWorkers();
     }
 
-    public static function startWorkers()
+    public function startWorkers()
     {
-        $wm = self::getWorkerManager();
-        $wm->start();
+        $this->worker->start();
     }
 
-    public static function stopWorkers()
+    public function stopWorkers()
     {
-        $wm = self::getWorkerManager();
-        $wm->stop();
+        $this->worker->stop();
     }
 
-    public static function startStatServer()
+    public function statStart()
     {
-        $server = self::getStatManager();
-        $server->start();
+        $this->stat->start();
     }
 
-    public static function stopStatServer()
+    public function statStop()
     {
-        $server = self::getStatManager();
-        $server->stop();
+        $this->stat->stop();
     }
 
-    public static function stat()
+    public function statData()
     {
-        return self::getStatManager();
+        return $this->stat->getData();
     }
 
-    public static function statData()
+    public function statPrint()
     {
-        return self::getStatManager()->getData();
+        $this->stat->printData();
     }
 
     public static function fork()
     {
-        if (!function_exists('pcntl_fork')) {
-            return -1;
-        }
-
         $pid = pcntl_fork();
         if($pid === -1) {
-            throw new RuntimeException('Unable to fork worker');
+            throw new \RuntimeException('Unable to fork worker');
         }
 
         return $pid;

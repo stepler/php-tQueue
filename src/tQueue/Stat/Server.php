@@ -1,5 +1,5 @@
 <?php
-namespace tQueue\Statistics;
+namespace tQueue\Stat;
 
 class Server 
 {

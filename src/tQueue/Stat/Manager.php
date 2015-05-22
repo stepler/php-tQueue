@@ -1,11 +1,11 @@
 <?php
-namespace tQueue\Statistics;
+namespace tQueue\Stat;
 
-use tQueue\Statistics\Server;
-use tQueue\Statistics\Client;
+use tQueue\Stat\Server;
+use tQueue\Stat\Client;
 use tQueue\Tools;
 
-class Manager 
+class Manager extends \tQueue\Base\Manager
 {
     protected $socket;
 
@@ -13,15 +13,12 @@ class Manager
 
     protected $pid_file;
 
-    public function __construct($config)
+    public function parseConfig($config)
     {
         $this->config = $config;
         $this->pid_file = $config["pid_file"];
-    }
 
-    public function setLogger($logger)
-    {
-        $this->logger = $logger;
+        $this->logger = $this->tQueue->logger;
     }
 
     public function getClient()
@@ -80,5 +77,11 @@ class Manager
     {
         $s = new Server($this->config);
         return $s->getData()->getArray();
+    }
+
+    public function printData()
+    {
+        $s = new Server($this->config);
+        return $s->getData()->printTable();
     }
 }

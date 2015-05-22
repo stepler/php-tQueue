@@ -2,6 +2,5 @@
 
 require __DIR__."/../../vendor/autoload.php";
 
-tQueue::setConfig(__DIR__."/config.ini");
-
-$task = tQueue::add("default", array("some_key"=>"some_data"));
+$tq = tQueue::create(__DIR__."/config.ini");
+$task = $tq->add("default", array("some_key"=>"some_data"));
