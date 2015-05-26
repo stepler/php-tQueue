@@ -1,7 +1,8 @@
 <?php
 namespace tQueue\Broker\Storage;
 
-use Exception;
+use tQueue\Helper\FS;
+use tQueue\Helper\Validate;
 
 class LocalFS extends Base
 {
@@ -12,20 +13,18 @@ class LocalFS extends Base
     protected function parseConfig($config)
     {
         if (empty($config["queues_dir"])) {
-            throw new Exception("Undefined 'queues_dir' option");
+            throw new InvalidArgumentException("Unable to found 'queues_dir' option in broker config");
         }
-        if (!file_exists($config["queues_dir"]) ||
-            !is_dir($config["queues_dir"])) {
-            throw new Exception("Invalid 'queues_dir' option");
-        }
-        if (empty($config["clear_success"])) {
-            $config["clear_success"] = -1;
-        }
-        if (!is_int($config["clear_success"])) {
-            throw new Exception("Invalid 'clear_success' option");
+        Validate::directory($config["queues_dir"]);
+
+        if (isset($config["clear_success"]) && !is_int($config["clear_success"])) {
+            throw new InvalidArgumentException("Invalid 'clear_success' option in broker config");
         }
 
-        $this->queues_dir = rtrim($config["queues_dir"], "\/");
+        if (!isset($config["clear_success"])) {
+            $config["clear_success"] = -1;
+        }
+        $this->queues_dir = $config["queues_dir"];
     }
 
     public function find($queue, $status)
@@ -58,12 +57,12 @@ class LocalFS extends Base
 
     protected function generateTaskFilePath($queue, $id, $status)
     {
-        return sprintf("%s/%s/%s.%s.task", $this->queues_dir, $queue, $id, $status);
+        return FS::joinPaths($this->queues_dir, $queue, sprintf("%s.%s.task", $id, $status));
     }
 
     protected function extractTaskData($task_file)
     {
-        preg_match("#.*/(?P<queue>.+?)/(?P<id>.+?)\.(?P<status>.+?)\.task$#", $task_file, $matches);
+        preg_match("#.*/(?P<queue>.+?)[\/](?P<id>.+?)\.(?P<status>.+?)\.task$#", $task_file, $matches);
         if (empty($matches["queue"]) ||
             empty($matches["id"]) ||
             empty($matches["status"])) {
@@ -100,12 +99,11 @@ class LocalFS extends Base
 
     protected function read($file)
     {
-        if (!file_exists($file) ||
-            !is_readable($file)) {
+        $raw_content = FS::readFile($file);
+        if (empty($raw_content)) {
             return null;
         }
-
-        $raw_content = file_get_contents($file);
+        
         $content = $this->unpackData($raw_content);
         if (empty($content)) {
             return null;
@@ -119,8 +117,7 @@ class LocalFS extends Base
         $this->createQueueDir($task_file);
 
         $data = $this->packData($data);
-        $result = file_put_contents($task_file, $data);
-        return $result !== false;
+        return FS::writeFile($task_file, $data);
     }
 
     protected function rename($old_task_file, $new_task_file)
@@ -137,7 +134,7 @@ class LocalFS extends Base
 
         $result = mkdir($dirname);
         if (!$result) {
-            throw new Exception("Unable to create queue folder");
+            throw new \RuntimeException("Unable to create queue folder");
         }
     }
 }

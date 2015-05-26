@@ -1,20 +1,23 @@
 <?php
 namespace tQueue;
 use Psr;
+use tQueue\Helper\Validate;
 
 class Logger extends Psr\Log\AbstractLogger  
 {
     protected $verbose = false;
+
     protected $handle;
 
     public function __construct($config)
     {
-        if (!empty($config["log_verbose"])) {
+        if (!empty($config["verbose"])) {
             $this->verbose = true;
         }
 
-        if (isset($config["log_file"])) {
-            $this->handle = fopen($config["log_file"], "a");
+        if (isset($config["file"])) {
+            Validate::file($config["file"]);
+            $this->handle = fopen($config["file"], "a");
         }
 
         if (empty($this->handle)) {

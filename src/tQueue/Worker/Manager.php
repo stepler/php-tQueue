@@ -3,10 +3,12 @@ namespace tQueue\Worker;
 
 use tQueue\Worker\Pid;
 use tQueue\Worker\Loader;
+use tQueue\Helper\Validate;
 
 class Manager extends \tQueue\Base\Manager
 {
     protected $workers = array();
+
     protected $pid_files = array();
 
     protected $pid;
@@ -15,7 +17,13 @@ class Manager extends \tQueue\Base\Manager
 
     public function parseConfig($config)
     {
-        // TODO Vadidate config
+        if (empty($config["pids_dir"])) {
+            throw new \InvalidArgumentException("Unable to found 'pids_dir' option in workers config");
+        }
+        if (empty($config["workers_dir"])) {
+            throw new \InvalidArgumentException("Unable to found 'workers_dir' option in workers config");
+        }
+
         $this->config = $config;
         $this->pid = new Pid($config["pids_dir"]);
 

@@ -1,27 +1,19 @@
 <?php
 namespace tQueue\Worker;
 
-use Exception;
-use RuntimeException;
-use InvalidArgumentException;
+use tQueue\Helper\Validate;
 
 class Loader
 {
     protected $workers_dir;
 
     protected $workers_is_loaded = false;
+ 
     protected $workers = array();
 
     public function __construct($workers_dir)
     {
-        if (empty($workers_dir) ||
-            !file_exists($workers_dir) ||
-            !is_dir($workers_dir)) {
-            throw new \InvalidArgumentException("Invalid workers_dir: {$workers_dir}");
-        }
-        if (!is_readable($workers_dir)) {
-            throw new \InvalidArgumentException("Workers dir is not readable");
-        }
+        Validate::directory($workers_dir);
         $this->workers_dir = $workers_dir;
     }
 
@@ -39,7 +31,7 @@ class Loader
         $this->workers = $this->parseLoadedClasses($newClasses);
 
         if (empty($this->workers)) {
-            throw new Exception("Unable to found workers");
+            throw new \RuntimeException("Unable to found workers");
         }
     }
 
@@ -65,7 +57,7 @@ class Loader
         $includePathFilename = stream_resolve_include_path($filename);
 
         if (!$includePathFilename || !is_readable($includePathFilename)) {
-            throw new Exception("Cannot open file '{$filename}'.\n");
+            throw new \RuntimeException("Cannot open file '{$filename}'.\n");
         }
         include_once $filename;
     }

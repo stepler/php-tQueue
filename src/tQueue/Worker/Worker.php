@@ -1,7 +1,7 @@
 <?php
 namespace tQueue\Worker;
 
-use tQueue\Helper\Tools;
+use tQueue\Helper\Validate;
 
 class Worker 
 {
@@ -21,7 +21,7 @@ class Worker
 
     final public function __construct($broker, $logger, $stat_client)
     {
-        Tools::validateWorkerName($this->getName());
+        Validate::workerName($this->getName());
 
         $this->broker = $broker;
         $this->logger = $logger;

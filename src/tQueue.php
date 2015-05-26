@@ -75,13 +75,13 @@ class tQueue
 
     public function add($queue, $data)
     {
-        \tQueue\Helper\Tools::validateQueueName($queue);
+        \tQueue\Helper\Validate::queueName($queue);
         return $this->broker->add($queue, $data);
     }
 
     public function process($queue)
     {
-        \tQueue\Helper\Tools::validateQueueName($queue);
+        \tQueue\Helper\Validate::queueName($queue);
         return $this->broker->process($queue);
     }
 

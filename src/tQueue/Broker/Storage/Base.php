@@ -9,7 +9,10 @@ abstract class Base
     }
 
     abstract protected function parseConfig($config);
+
     abstract public function find($queue, $status);
+
     abstract public function create($id, $queue, $status, $data);
+
     abstract public function update($id, $queue, $status);
 }

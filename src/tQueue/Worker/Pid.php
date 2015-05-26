@@ -1,19 +1,21 @@
 <?php
 namespace tQueue\Worker;
 
-use tQueue\Tools;
+use tQueue\Helper\Validate;
+use tQueue\Helper\FS;
 
 class Pid 
 {
     protected $workers;
+
     protected $pids;
-    protected $pid_path;
 
-    public function __construct($pid_path)
+    protected $path;
+
+    public function __construct($path)
     {
-        // TODO validate
-        $this->pid_path = rtrim($pid_path, "\/").DIRECTORY_SEPARATOR;
-
+        Validate::directory($path);
+        $this->path = $path;
         $this->pids = $this->getRegisteredPids();
     }
 
@@ -25,13 +27,13 @@ class Pid
     protected function makePidfileName($name, $fork, $get_full_path=false)
     {
         $name = sprintf("%s.%s.pid", $name, $fork);
-        return $get_full_path ? $this->pid_path.$name : $name ;
+        return $get_full_path ? FS::joinPaths($this->path, $name) : $name ;
     }
 
     protected function getRegisteredPids()
     {
         $result = array();
-        $exist_pidfiles = glob($this->pid_path."*.pid");
+        $exist_pidfiles = FS::findFiles($this->path, "*.pid");
         foreach ($exist_pidfiles as $pidfile) {
             $result[$pidfile] = $this->getPid($pidfile);
         }
@@ -40,9 +42,9 @@ class Pid
 
     protected function getPid($filename)
     {
-        @$content = file_get_contents($filename);
+        $content = FS::readFile($filename);
         if (empty($content)) {
-            throw new Exception("Unable to get PID from {$filename}");
+            throw new \RuntimeException("Unable to get PID from {$filename}");
         }
         return $content;
     }
@@ -85,10 +87,10 @@ class Pid
     public function add($pid, $worker_name, $fork)
     {
         $filename = $this->makePidfileName($worker_name, $fork, true);
-        $result = file_put_contents($filename, $pid);
+        $result = FS::writeFile($filename, $pid);
         if ($result === false) {
-            Tools::killProcess($pid);
-            throw new Exception("Unable to save PID to {$filename}");
+            \tQueue\Helper\Tools::killProcess($pid);
+            throw new \RuntimeException("Unable to save PID to {$filename}");
         }
         $this->pids[$filename] = $pid;
     }
@@ -98,7 +100,7 @@ class Pid
         foreach ($this->pids as $filename => $_pid)
         {
             if ($_pid === $pid) {
-                unlink($filename);
+                FS::deleteFile($filename);
                 unset($this->pids[$filename]);
             }
         }

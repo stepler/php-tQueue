@@ -3,5 +3,7 @@ vendor/
 
 .dev_tools
 test/functional/queues
+test/functional/pid
+test/functional/stat
 *.log
 *.ini

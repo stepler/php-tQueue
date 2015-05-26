@@ -2,12 +2,16 @@
 namespace tQueue\Broker;
 
 use tQueue\Task;
+use tQueue\Helper\FS;
 
 
 class Manager extends \tQueue\Base\Manager
 {
     protected $broker;
+
     protected $stat;
+
+    protected $storage_path;
 
     protected $config;
 
@@ -27,6 +31,8 @@ class Manager extends \tQueue\Base\Manager
         $this->broker = new $ns_broker_class($broker_settings);
 
         $this->stat = $this->tQueue->stat->getClient();
+
+        $this->storage_path = FS::joinPaths(__DIR__, "Storage");
     }
 
     protected function loadBroker($broker_class)
@@ -38,18 +44,13 @@ class Manager extends \tQueue\Base\Manager
         }
 
         $search_filename = strtolower($broker_class);
-        $files = glob(__DIR__."/Storage/*.php");
+        $files = FS::findFiles($this->storage_path, "*.php");
         foreach ($files as $file) {
-            var_dump($search_filename, pathinfo($file, PATHINFO_FILENAME));
-            if ($search_filename === pathinfo($file, PATHINFO_FILENAME))  {
+            if ($search_filename === strtolower(pathinfo($file, PATHINFO_FILENAME)))  {
                 require $file;
                 break;
             }
         }
-        var_dump($files);
-        var_dump($search_filename);
-        // print_r(get_declared_classes()); 
-        exit();
 
         if (!class_exists($ns_broker_class)) {
             throw new \Exception("Unable to load Broker '{$broker_class}'");
@@ -77,7 +78,7 @@ class Manager extends \tQueue\Base\Manager
 
     protected function generateId()
     {
-        return md5(uniqid("", true));
+        return md5(uniqid("", true).time());
     }
 
     public function add($queue, $data)
@@ -89,7 +90,6 @@ class Manager extends \tQueue\Base\Manager
         
         return $task;
     }
-
 
     public function process($queue)
     {

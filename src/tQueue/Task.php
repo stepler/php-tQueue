@@ -1,8 +1,6 @@
 <?php
 namespace tQueue;
 
-use Exception;
-
 class Task 
 {
     const STATUS_WAITING = 'waiting';
@@ -25,17 +23,17 @@ class Task
     public function __construct($id, $queue, $status, $data)
     {
         if (empty($id)) {
-            throw new Exception("Undefined ID of task");
+            throw new \InvalidArgumentException("Undefined ID of task");
         }
         if (empty($queue)) {
-            throw new Exception("Undefined $queue of task");
+            throw new \InvalidArgumentException("Undefined $queue of task");
         }
         if (!in_array($status, array(self::STATUS_WAITING, 
             self::STATUS_RUNNING, self::STATUS_COMPLETE, self::STATUS_FAILED))) {
-            throw new Exception("Invalid status value {$status}");
+            throw new \InvalidArgumentException("Invalid status value {$status}");
         }
         if (empty($data)) {
-            throw new Exception("Undefined data of task");
+            throw new \InvalidArgumentException("Undefined data of task");
         }
 
         $this->id = $id;

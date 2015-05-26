@@ -17,11 +17,15 @@ class Config implements \ArrayAccess
 
     protected function loadFromFile($filename)
     {
-        @$content = parse_ini_file($filename, true);
-        if ($content === false) {
+        $content = \tQueue\Helper\FS::readFile($filename);
+        if (empty($content)) {
             throw new \InvalidArgumentException("Invalid config file {$filename}");
         }
-        return $content;
+        $config = parse_ini_string($content, true);
+        if ($config === false) {
+            throw new \InvalidArgumentException("Error on parse config file {$filename}");
+        }
+        return $config;
     }
 
     protected function validateConfig($config)

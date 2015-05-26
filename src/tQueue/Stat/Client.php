@@ -5,16 +5,23 @@ class Client
 {
     protected $host;
 
-    public function __construct($host)
+    protected $logger;
+
+    public function __construct($logger, $config)
     {
-        $this->host = $host;
+        $this->logger = $logger;
+
+        if (empty($config["host"])) {
+            throw new \InvalidArgumentException("Unable to found 'host' option in stat config");
+        }
+        $this->host = $config["host"];
     }
 
     public function send($queue, $worker, $type)
     {
         @$socket = stream_socket_client($this->host, $errno, $errstr, 2);
         if (!$socket) {
-            // $this->logger->error("Unable to send statistic: ({$errno}) {$errstr}");
+            $this->logger->error("Unable to send statistic: ({$errno}) {$errstr}");
             return false;
         }
 

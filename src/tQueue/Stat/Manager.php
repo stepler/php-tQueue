@@ -3,7 +3,7 @@ namespace tQueue\Stat;
 
 use tQueue\Stat\Server;
 use tQueue\Stat\Client;
-use tQueue\Tools;
+use tQueue\Helper\Validate;
 
 class Manager extends \tQueue\Base\Manager
 {
@@ -15,6 +15,11 @@ class Manager extends \tQueue\Base\Manager
 
     public function parseConfig($config)
     {
+        if (empty($config["pid_file"])) {
+            throw new \InvalidArgumentException("Unable to found 'pid_file' option in stat config");
+        }
+        Validate::makefile($config["pid_file"]);
+
         $this->config = $config;
         $this->pid_file = $config["pid_file"];
 
@@ -23,14 +28,14 @@ class Manager extends \tQueue\Base\Manager
 
     public function getClient()
     {
-        return new Client($this->config["host"]);
+        return new Client($this->logger, $this->config);
     }
 
     public function start()
     {
         $pid = \tQueue::fork();
         if ($pid === 0) {
-            $s = new Server($this->config);
+            $s = new Server($this->logger, $this->config);
             $s->run();
             return;
         }
@@ -59,7 +64,7 @@ class Manager extends \tQueue\Base\Manager
 
         $result = file_put_contents($this->pid_file, $pid);
         if ($result === false) {
-            Tools::killProcess($pid);
+            \tQueue\Helper\Tools::killProcess($pid);
             throw new \Exception("Unable to save PID to {$this->pid_file}");
         }
     }

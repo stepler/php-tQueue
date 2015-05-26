@@ -3,20 +3,16 @@ namespace tQueue\Helper;
 
 class Tools 
 {
-    public static function validateQueueName($queue_name)
+    public function normalizePath($path)
     {
-        if (preg_match('/[^\w-]/', $queue_name) !== 0) {
-            throw new \InvalidArgumentException(
-                "Invalid queue name {$queue_name}. Queue name must contain '0-9a-zA-Z_-' sybmbols");
-        }
+        return rtrim($path, "\/")
     }
 
-    public static function validateWorkerName($worker_name)
+    public function joinPaths()
     {
-        if (preg_match('/[^\w-]/', $worker_name) !== 0) {
-            throw new \InvalidArgumentException(
-                "Invalid worker name {$worker_name}. Worker name must contain '0-9a-zA-Z_-' sybmbols");
-        }
+        $args = func_get_args();
+        $paths = array_map(array(self, 'normalizePath'), $args);
+        return implode(DIRECTORY_SEPARATOR, $paths);
     }
 
     public static function killProcess($pid)
