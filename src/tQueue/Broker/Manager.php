@@ -1,50 +1,54 @@
 <?php
 namespace tQueue\Broker;
 
+use tQueue\Broker\Loader;
 use tQueue\Task;
 use tQueue\Helper\FS;
-
 
 class Manager extends \tQueue\Base\Manager
 {
     protected $broker;
 
-    protected $stat;
+    protected $broker_name;
 
-    protected $storage_path;
+    protected $broker_settings;
+
+    protected $stat;
 
     protected $config;
 
     protected function parseConfig($config) 
     {
-        $this->config = $config;
+        if (empty($config["broker"])) {
+            throw new \InvalidArgumentException("Unable to found 'broker' option in broker config");
+        }
+        if (empty($config["settings"])) {
+            throw new \InvalidArgumentException("Unable to found 'settings' option in broker config");
+        }
+
+        $this->broker_name = $config["broker"];
+        $this->broker_settings = $config["settings"];
     }
 
     public function on_construct()
     {
-        $broker_class = $this->config["broker"];
-        $broker_settings = $this->config["settings"];
-        $this->loadBroker($broker_class);
-        
-        $ns_broker_class = '\\tQueue\\Broker\\Storage\\'.$broker_class;
-
-        $this->broker = new $ns_broker_class($broker_settings);
+        $ns_broker_class = Loader::getBrokerClass($this->broker_name);
+        $this->broker = new $ns_broker_class($this->broker_settings);
 
         $this->stat = $this->tQueue->stat->getClient();
-
-        $this->storage_path = FS::joinPaths(__DIR__, "Storage");
     }
 
     protected function loadBroker($broker_class)
     {
-        $ns_broker_class = '\\tQueue\\Broker\\Storage\\'.$broker_class;
+        $ns_broker_class = __NAMESPACE__."\\Storage\\{$broker_class}";
 
         if (class_exists($ns_broker_class)) {
             return;
         }
 
+        $storage_path = FS::joinPaths(__DIR__, "Storage");
         $search_filename = strtolower($broker_class);
-        $files = FS::findFiles($this->storage_path, "*.php");
+        $files = FS::findFiles($storage_path, "*.php");
         foreach ($files as $file) {
             if ($search_filename === strtolower(pathinfo($file, PATHINFO_FILENAME)))  {
                 require $file;

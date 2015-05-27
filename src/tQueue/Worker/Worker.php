@@ -9,8 +9,6 @@ class Worker
 
     protected $interval = 5;
 
-    public $shutdown = false;
-
     protected $logger;
 
     protected $broker;
@@ -18,6 +16,8 @@ class Worker
     protected $forks;
 
     protected $name;
+
+    public $shutdown = false;
 
     final public function __construct($broker, $logger, $stat_client)
     {
