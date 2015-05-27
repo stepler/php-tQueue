@@ -16,7 +16,7 @@ class Logger extends Psr\Log\AbstractLogger
         }
 
         if (isset($config["file"])) {
-            Validate::file($config["file"]);
+            Validate::makefile($config["file"]);
             $this->handle = fopen($config["file"], "a");
         }
 
