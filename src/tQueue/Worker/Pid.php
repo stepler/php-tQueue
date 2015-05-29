@@ -40,16 +40,16 @@ class Pid
         return $result;
     }
 
-    protected function getPid($filename)
+    protected function getPid($pidfile)
     {
-        $content = FS::readFile($filename);
+        $content = FS::readFile($pidfile);
         if (empty($content)) {
-            throw new \RuntimeException("Unable to get PID from {$filename}");
+            throw new \RuntimeException("Unable to get PID from {$pidfile}");
         }
         return $content;
     }
 
-    public function getZombiePids()
+    public function getZombie()
     {
         $result = array();
         $pidnames = array();
@@ -62,7 +62,7 @@ class Pid
 
         foreach ($this->pids as $pidfile => $pid)
         {
-            if (in_array(pathinfo($pidfile, PATHINFO_BASENAME), $pidnames)) {
+            if (!in_array(pathinfo($pidfile, PATHINFO_BASENAME), $pidnames)) {
                 $result[] = $pid;
             }
         }
@@ -77,31 +77,31 @@ class Pid
 
     public function getByWorker($worker_name, $fork=1)
     {
-        $filename = $this->makePidfileName($worker_name, $fork, true);
-        if (!array_key_exists($filename, $this->pids)) {
+        $pidfile = $this->makePidfileName($worker_name, $fork, true);
+        if (!array_key_exists($pidfile, $this->pids)) {
             return 0;
         }
-        return $this->pids[$filename];
+        return $this->pids[$pidfile];
     }
 
     public function add($pid, $worker_name, $fork)
     {
-        $filename = $this->makePidfileName($worker_name, $fork, true);
-        $result = FS::writeFile($filename, $pid);
+        $pidfile = $this->makePidfileName($worker_name, $fork, true);
+        $result = FS::writeFile($pidfile, $pid);
         if ($result === false) {
             \tQueue\Helper\Tools::killProcess($pid);
-            throw new \RuntimeException("Unable to save PID to {$filename}");
+            throw new \RuntimeException("Unable to save PID to {$pidfile}");
         }
-        $this->pids[$filename] = $pid;
+        $this->pids[$pidfile] = $pid;
     }
 
     public function remove($pid)
     {
-        foreach ($this->pids as $filename => $_pid)
+        foreach ($this->pids as $pidfile => $_pid)
         {
             if ($_pid === $pid) {
-                FS::deleteFile($filename);
-                unset($this->pids[$filename]);
+                FS::deleteFile($pidfile);
+                unset($this->pids[$pidfile]);
             }
         }
     }

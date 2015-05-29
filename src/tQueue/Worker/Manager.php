@@ -3,17 +3,15 @@ namespace tQueue\Worker;
 
 use tQueue\Worker\Pid;
 use tQueue\Worker\Loader;
-use tQueue\Helper\Validate;
+use tQueue\Helper\Tools;
 
 class Manager extends \tQueue\Base\Manager
 {
-    protected $workers = array();
-
-    protected $pid_files = array();
+    protected $workers;
 
     protected $pid;
 
-    protected $logger;
+    protected $loader;
 
     public function parseConfig($config)
     {
@@ -24,53 +22,46 @@ class Manager extends \tQueue\Base\Manager
             throw new \InvalidArgumentException("Unable to found 'workers_dir' option in workers config");
         }
 
-        $this->config = $config;
         $this->pid = new Pid($config["pids_dir"]);
-
-        $this->logger = $this->tQueue->logger;
+        $this->loader = new Loader($config["workers_dir"]);
     }
 
     protected function getWorkers()
     {
-        if (empty($this->workers)) {
-            $loader = new Loader($this->config["workers_dir"]);
-            $workers = $loader->getWorkers();
-            $this->workers = $this->getWorkersInfo($workers);
-
-            $this->pid->setWorkers($this->workers);
+        if (is_null($this->workers)) {
+            $this->workers = $this->loadWorkers();
         }
 
         return $this->workers;
     }
 
-    protected function getWorkersInfo($workers)
+    protected function loadWorkers()
     {
-        $result = array();
-        foreach ($workers as $workerClass)
+        $workers = array();
+        $classes = $this->loader->getWorkers();
+        foreach ($classes as $worker_class)
         {
-            $w = new $workerClass(null, null, null);
-            $result[] = array(
-                "class_name" => $workerClass,
+            $w = new $worker_class(null, null, null);
+            Validate::workerName($w->getName());
+            
+            $workers[] = array(
+                "class_name" => $worker_class,
                 "forks" => $w->getForks(),
                 "name" => $w->getName()
             );
             unset($w);
         }
 
-        return $result;
+        $this->pid->setWorkers($workers);
+        return $workers;
     }
 
-    protected function stopZombie()
+    public function stop($stop_zombie=false)
     {
-        $list = $this->pid->getZombiePids();
-        foreach ($list as $pid) {
-            $this->stopByPid($pid);
-        }
-    }
+        $list = $stop_zombie 
+                ? $this->pid->getZombie()
+                : $this->pid->getAll();
 
-    public function stop()
-    {
-        $list = $this->pid->getAll();
         foreach ($list as $pid) {
             $this->stopByPid($pid);
         }
@@ -78,30 +69,23 @@ class Manager extends \tQueue\Base\Manager
 
     protected function stopByPid($pid)
     {
-        $status = $this->statusByPid($pid);
-        if ($status) {
+        if (Tools::statusProcess($pid)) {
             posix_kill($pid, SIGQUIT);
         }
         $this->pid->remove($pid);
     }
 
-    protected function statusByPid($pid)
-    {
-        exec("ps -o pid,state -p {$pid}", $output, $returnCode);
-        return $returnCode === 0;
-    }
-
     protected function status($worker_name, $fork=1)
     {
         $pid = $this->pid->getByWorker($worker_name, $fork);
-        return $this->statusByPid($pid);
+        return Tools::statusProcess($pid);
     }
 
     public function start()
     {
         $workers = $this->getWorkers();
 
-        $this->stopZombie($workers);
+        $this->stop(true);
 
         foreach ($workers as $worker)
         {
@@ -129,7 +113,7 @@ class Manager extends \tQueue\Base\Manager
                     $w->run();
                     break;
                 }
-                $this->logger->debug("New worker PID: {$pid}");
+                $this->tQueue->logger->debug("New worker PID: {$pid}");
             }
         }
     }

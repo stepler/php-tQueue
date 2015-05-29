@@ -1,5 +1,6 @@
 <?php
 namespace tQueue;
+
 use Psr;
 use tQueue\Helper\Validate;
 
@@ -27,8 +28,9 @@ class Logger extends Psr\Log\AbstractLogger
 
     public function log($level, $message, array $context=array())
     {
+        return;
         if (!$this->verbose &&
-            $level == Psr\Log\LogLevel::DEBUG) {
+            ($level == Psr\Log\LogLevel::DEBUG || $level == Psr\Log\LogLevel::INFO)) {
             return;
         }
         fwrite($this->handle,

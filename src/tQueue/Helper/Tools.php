@@ -3,20 +3,14 @@ namespace tQueue\Helper;
 
 class Tools 
 {
-    public function normalizePath($path)
-    {
-        return rtrim($path, "\/")
-    }
-
-    public function joinPaths()
-    {
-        $args = func_get_args();
-        $paths = array_map(array(self, 'normalizePath'), $args);
-        return implode(DIRECTORY_SEPARATOR, $paths);
-    }
-
     public static function killProcess($pid)
     {
         exec("kill -9 {$pid}");
+    }
+
+    public static function statusProcess($pid)
+    {
+        exec("ps -o pid,state -p {$pid}", $output, $returnCode);
+        return $returnCode === 0;
     }
 }

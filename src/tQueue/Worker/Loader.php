@@ -19,16 +19,11 @@ class Loader
 
     protected function loadWorkers()
     {
-        $files = $this->getWorkerFiles();
         $classes = get_declared_classes();
+        $this->loadWorkerFiles();
+        $new_classes = array_diff(get_declared_classes(), $classes);
 
-        foreach ($files as $file) {
-            $this->loadWorkerFile($file);
-        }
-
-        $newClasses = array_diff(get_declared_classes(), $classes);
-
-        $this->workers = $this->parseLoadedClasses($newClasses);
+        $this->workers = $this->parseLoadedClasses($new_classes);
 
         if (empty($this->workers)) {
             throw new \RuntimeException("Unable to found workers");
@@ -52,14 +47,16 @@ class Loader
         return $result;
     }
 
-    protected function loadWorkerFile($filename)
+    protected function loadWorkerFiles()
     {
-        $includePathFilename = stream_resolve_include_path($filename);
-
-        if (!$includePathFilename || !is_readable($includePathFilename)) {
-            throw new \RuntimeException("Cannot open file '{$filename}'.\n");
+        $files = $this->getWorkerFiles();
+        foreach ($files as $file) {
+            $includePathFilename = stream_resolve_include_path($filename);
+            if (!$includePathFilename || !is_readable($includePathFilename)) {
+                throw new \RuntimeException("Cannot open file '{$filename}'.\n");
+            }
+            include_once $filename;
         }
-        include_once $filename;
     }
 
     protected function parseLoadedClasses($classes)

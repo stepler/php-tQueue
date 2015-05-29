@@ -21,8 +21,6 @@ class Worker
 
     final public function __construct($broker, $logger, $stat_client)
     {
-        Validate::workerName($this->getName());
-
         $this->broker = $broker;
         $this->logger = $logger;
         $this->stat = $stat_client;
@@ -46,7 +44,6 @@ class Worker
         if ($this->shutdown === true) {
             return false;
         }
-        // $this->logger->info("Searching task");
 
         $task = $this->get_work();
 

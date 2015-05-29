@@ -28,13 +28,15 @@ class FS
         return null;
     }
 
-    public static function writeFile($filename, $data, $permissions="755")
+    public static function writeFile($filename, $data, $chmod=0750)
     {
         $result = false;
-        if ((file_exists($filename) && is_writable($filename)) ||
-            is_writable(pathinfo($filename, PATHINFO_DIRNAME)))
-        {
+        if (file_exists($filename)) {
             $result = file_put_contents($filename, $data);
+        }
+        elseif (is_writable(pathinfo($filename, PATHINFO_DIRNAME))) {
+            $result = file_put_contents($filename, $data);
+            chmod($filename, $chmod);
         }
         return $result !== false;
     }
