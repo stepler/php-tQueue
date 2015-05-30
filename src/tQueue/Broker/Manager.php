@@ -38,29 +38,6 @@ class Manager extends \tQueue\Base\Manager
         $this->stat = $this->tQueue->stat->getClient();
     }
 
-    protected function loadBroker($broker_class)
-    {
-        $ns_broker_class = __NAMESPACE__."\\Storage\\{$broker_class}";
-
-        if (class_exists($ns_broker_class)) {
-            return;
-        }
-
-        $storage_path = FS::joinPaths(__DIR__, "Storage");
-        $search_filename = strtolower($broker_class);
-        $files = FS::findFiles($storage_path, "*.php");
-        foreach ($files as $file) {
-            if ($search_filename === strtolower(pathinfo($file, PATHINFO_FILENAME)))  {
-                require $file;
-                break;
-            }
-        }
-
-        if (!class_exists($ns_broker_class)) {
-            throw new \Exception("Unable to load Broker '{$broker_class}'");
-        }
-    }
-
     protected function createTask($queue, $data)
     {
         $id = $this->generateId();

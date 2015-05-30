@@ -1,6 +1,8 @@
 <?php
 namespace tQueue;
 
+use tQueue\Helper\Validate;
+
 class Task 
 {
     const STATUS_WAITING = 'waiting';
@@ -20,20 +22,12 @@ class Task
 
     protected $on_save_callback;
 
-    public function __construct($id, $queue, $status, $data)
+    public function __construct($id, $queue, $status, $data=null)
     {
-        if (empty($id)) {
-            throw new \InvalidArgumentException("Undefined ID of task");
-        }
-        if (empty($queue)) {
-            throw new \InvalidArgumentException("Undefined $queue of task");
-        }
+        Validate::queueName($queue);
         if (!in_array($status, array(self::STATUS_WAITING, 
             self::STATUS_RUNNING, self::STATUS_COMPLETE, self::STATUS_FAILED))) {
             throw new \InvalidArgumentException("Invalid status value {$status}");
-        }
-        if (empty($data)) {
-            throw new \InvalidArgumentException("Undefined data of task");
         }
 
         $this->id = $id;
@@ -42,7 +36,7 @@ class Task
         $this->data = $data;
     }
 
-    public function complete($result=null, $force_save=true)
+    public function complete($force_save=true)
     {
         $this->status = self::STATUS_COMPLETE;
 
@@ -51,7 +45,7 @@ class Task
         }
     }
 
-    public function failed($reason=null, $force_save=true)
+    public function failed($force_save=true)
     {
         $this->status = self::STATUS_FAILED;
     

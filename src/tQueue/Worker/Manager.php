@@ -43,12 +43,13 @@ class Manager extends \tQueue\Base\Manager
         {
             $w = new $worker_class(null, null, null);
             Validate::workerName($w->getName());
-            
-            $workers[] = array(
-                "class_name" => $worker_class,
-                "forks" => $w->getForks(),
-                "name" => $w->getName()
-            );
+
+            $inf = new stdClass;
+            $inf->class_name = $worker_class;
+            $inf->forks = $w->getForks();
+            $inf->name = $w->getName();
+
+            $workers[] = $inf;
             unset($w);
         }
 
@@ -89,22 +90,19 @@ class Manager extends \tQueue\Base\Manager
 
         foreach ($workers as $worker)
         {
-            $worker_name = $worker["name"];
-            $worker_class = $worker["class_name"];
-            $worker_forks = $worker["forks"];
-
-            for ($fork=1; $fork<=$worker_forks; $fork++)
+            $className = $worker->class_name;
+            for ($fork=1; $fork<=$worker->forks; $fork++)
             {
-                if ($this->status($worker_name, $fork)) {
+                if ($this->status($worker->name, $fork)) {
                     continue;
                 }
 
                 $pid = \tQueue::fork();
                 if ($pid > 0) {
-                    $this->pid->add($pid, $worker_name, $fork);
+                    $this->pid->add($pid, $worker->name, $fork);
                 }
                 else {
-                    $w = new $worker_class(
+                    $w = new $className(
                         $this->tQueue->broker,
                         $this->tQueue->logger, 
                         $this->tQueue->stat->getClient()

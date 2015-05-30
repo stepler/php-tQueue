@@ -4,37 +4,77 @@ use tQueue\Task;
 
 class TaskTest extends PHPUnit_Framework_TestCase
 {
-    public function testNewTaskStatus()
+    public function testPass()
     {
-        $task = tQueue::add('default', '...');
-        $this->assertEquals($task->getStatus(), Task::STATUS_WAITING);
+        $this->assertTrue(true);
     }
 
-    public function testRuningTaskStatus()
+    public function testInvalidTask1()
     {
-        $task = tQueue::add('default', '...');
-        $task->running();
-        $this->assertEquals($task->getStatus(), Task::STATUS_RUNNING);
+        $this->setExpectedException("InvalidArgumentException");
+        $task = new Task(1, "...?", "test");
     }
 
-    public function testCompleteTaskStatus()
+    public function testInvalidTask2()
     {
-        $task = tQueue::add('default', '...');
-        $task->complete();
-        $this->assertEquals($task->getStatus(), Task::STATUS_COMPLETE);
+        $this->setExpectedException("InvalidArgumentException");
+        $task = new Task(1, "default", "test");
     }
 
-    public function testFailedTaskStatus()
+    public function testTaskQueue()
     {
-        $task = tQueue::add('default', '...');
-        $task->failed();
-        $this->assertEquals($task->getStatus(), Task::STATUS_FAILED);
+        $task = new Task(1, "default", Task::STATUS_WAITING);
+        $this->assertEquals($task->getQueue(), "default");
     }
 
     public function testTaskData()
     {
         $data = array("some_key"=>"some_val", array(1, 2, 3));
-        $task = tQueue::add('default', $data);
+        $task = new Task(1, "default", Task::STATUS_WAITING, $data);
         $this->assertEquals($task->getData(), $data);
+    }
+
+    public function testWaitingTaskStatus()
+    {
+        $task = new Task(1, "default", Task::STATUS_WAITING);
+        $this->assertEquals($task->getStatus(), Task::STATUS_WAITING);
+    }
+
+    public function testRuningTaskStatus()
+    {
+        $task = new Task(1, "default", Task::STATUS_WAITING);
+        $task->running(false);
+        $this->assertEquals($task->getStatus(), Task::STATUS_RUNNING);
+    }
+
+    public function testCompleteTaskStatus()
+    {
+        $task = new Task(1, "default", Task::STATUS_WAITING);
+        $task->complete(false);
+        $this->assertEquals($task->getStatus(), Task::STATUS_COMPLETE);
+    }
+
+    public function testFailedTaskStatus()
+    {
+        $task = new Task(1, "default", Task::STATUS_WAITING);
+        $task->failed(false);
+        $this->assertEquals($task->getStatus(), Task::STATUS_FAILED);
+    }
+
+    public function testUpdateTaskByStatusChange()
+    {
+        $task = new Task(1, "default", Task::STATUS_WAITING);
+        $mock = $this->getMock("TaskObserver", array("update"));
+        $mock->expects($this->exactly(3))
+             ->method("update")
+             ->withConsecutive(
+                array($this->identicalTo($task)),
+                array($this->identicalTo($task)),
+                array($this->identicalTo($task))
+             );
+        $task->setOnSaveCallback(array($mock, "update"));
+        $task->running();
+        $task->failed();
+        $task->complete();
     }
 }

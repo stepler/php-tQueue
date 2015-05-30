@@ -1,7 +1,7 @@
 <?php
-namespace tQueue\Broker;
+namespace tQueue\Broker\Storage;
 
-class TestBroker extends Base 
+class RamBroker extends Base 
 {
     public static $instance;
 

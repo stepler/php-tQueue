@@ -42,7 +42,7 @@ class Pid
 
     protected function getPid($pidfile)
     {
-        $content = FS::readFile($pidfile);
+        $content = (int) FS::readFile($pidfile);
         if (empty($content)) {
             throw new \RuntimeException("Unable to get PID from {$pidfile}");
         }
@@ -55,15 +55,15 @@ class Pid
         $pidnames = array();
         foreach ($this->workers as $worker)
         {
-            for ($fork=1; $fork<=$worker["forks"]; $fork++) {
-                $pidnames[] = $this->makePidfileName($worker["name"], $fork);
+            for ($fork=1; $fork<=$worker->forks; $fork++) {
+                $pidnames[] = $this->makePidfileName($worker->name, $fork);
             }
         }
 
         foreach ($this->pids as $pidfile => $pid)
         {
             if (!in_array(pathinfo($pidfile, PATHINFO_BASENAME), $pidnames)) {
-                $result[] = $pid;
+                $result[] = intval($pid);
             }
         }
 

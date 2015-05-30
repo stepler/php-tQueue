@@ -1,9 +1,7 @@
 <?php
 require __DIR__ . '/../vendor/autoload.php';
-require __DIR__ . '/unit/test_data/TestBroker.php';
+require __DIR__ . '/unit/TestData/Classes/RamBroker.php';
+require __DIR__ . '/unit/TestData/Classes/TaskObserver.php';
 
-tQueue::setConfig(array(
-    "broker" => "TestBroker",
-    "broker_settings" => array()
-));
-tQueue::getInstance();
+define("WORKERS_PID_DIR", __DIR__."/unit/TestData/WorkersPid/");
+define("WORKERS_DIR", __DIR__."/unit/TestData/Workers/");

@@ -7,6 +7,8 @@ class Client
 
     protected $logger;
 
+    protected $stack = array();
+
     public function __construct($logger, $config)
     {
         $this->logger = $logger;
@@ -19,14 +21,22 @@ class Client
 
     public function send($queue, $worker, $type)
     {
+        $data = func_get_args();
+        $data_to_send = implode("#", $data);
+
         @$socket = stream_socket_client($this->host, $errno, $errstr, 2);
         if (!$socket) {
+            $this->stack[] = $data_to_send;
             $this->logger->error("Unable to send statistic: ({$errno}) {$errstr}");
             return false;
         }
 
-        $data = func_get_args();
-        $data_to_send = implode("#", $data);
+        if (!empty($this->stack)) {
+            foreach ($this->stack as $stack_data) {
+                fwrite($socket, $data_to_send);
+            }
+            $this->stack = array();
+        }
 
         fwrite($socket, $data_to_send);
         fclose($socket);
