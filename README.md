@@ -1,2 +1,2 @@
 # php-tQueue
-Simple Message Queue in PHP
+Simple Task Queue system in PHP
