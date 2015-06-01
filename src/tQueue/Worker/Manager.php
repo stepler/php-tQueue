@@ -118,11 +118,9 @@ class Manager extends \tQueue\Base\Manager
         foreach ($workers as $worker)
         {
             $className = $worker->class_name;
-
             if ($this->getWorkerStatus($worker->name, $worker->fork)) {
                 continue;
             }
-
             $pid = \tQueue::fork();
             if ($pid > 0) {
                 $this->pid->add($pid, $worker->name, $worker->fork);
@@ -133,7 +131,6 @@ class Manager extends \tQueue\Base\Manager
                     $this->tQueue->logger, 
                     $this->tQueue->stat->getClient()
                 );
-
                 $w->run();
                 break;
             }

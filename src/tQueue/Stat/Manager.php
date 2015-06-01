@@ -83,10 +83,4 @@ class Manager extends \tQueue\Base\Manager
         $s = new Server($this->config);
         return $s->getData()->getArray();
     }
-
-    public function printData()
-    {
-        $s = new Server($this->config);
-        return $s->getData()->printTable();
-    }
 }

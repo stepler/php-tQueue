@@ -110,14 +110,22 @@ class tQueue
         $this->stat->stop();
     }
 
-    public function statData()
+    public function statData($print=false)
     {
-        return $this->stat->getData();
+        $data = $this->stat->getData();
+        if ($print === true) {
+            \tQueue\Printer::stat($data);
+        }
+        return $data;
     }
 
-    public function statPrint()
+    public function statusWorker($print=false)
     {
-        $this->stat->printData();
+        $data = $this->worker->status();
+        if ($print === true) {
+            \tQueue\Printer::status($data);
+        }
+        return $data;
     }
 
     public static function fork()
