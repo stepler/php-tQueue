@@ -26,7 +26,7 @@ class Printer
     static function status($data)
     {
         $draw_data = array();
-        foreach ($this->data as $worker_info => $status) {
+        foreach ($data as $worker_info => $status) {
             list($name, $fork) = explode(" # ", $worker_info);
             $row = array($name, $fork,
                 ($status ? 'working' : 'stopped' ));

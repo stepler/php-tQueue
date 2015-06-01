@@ -37,7 +37,7 @@ class Manager extends \tQueue\Base\Manager
         if ($pid === 0) {
             $s = new Server($this->logger, $this->config);
             $s->run();
-            return;
+            exit();
         }
 
         $this->setPid($pid);
@@ -80,7 +80,7 @@ class Manager extends \tQueue\Base\Manager
 
     public function getData()
     {
-        $s = new Server($this->config);
+        $s = new Server($this->logger, $this->config);
         return $s->getData()->getArray();
     }
 }

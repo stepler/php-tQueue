@@ -58,7 +58,7 @@ class Server
     {
         $socket = stream_socket_server($this->host, $errno, $errstr);
         if (!$socket) {
-            throw new Exception("Unable to create socket server: $errstr ($errno)");
+            throw new \RuntimeException("Unable to create socket server: $errstr ($errno)");
         }
 
         while (true) {

@@ -51,11 +51,11 @@ class Loader
     {
         $files = $this->getWorkerFiles();
         foreach ($files as $file) {
-            $includePathFilename = stream_resolve_include_path($filename);
+            $includePathFilename = stream_resolve_include_path($file);
             if (!$includePathFilename || !is_readable($includePathFilename)) {
                 throw new \RuntimeException("Cannot open file '{$filename}'.\n");
             }
-            include_once $filename;
+            include_once $file;
         }
     }
 

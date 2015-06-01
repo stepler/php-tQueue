@@ -1,9 +1,11 @@
 <?php
 namespace tQueue\Worker;
 
+use stdClass;
 use tQueue\Worker\Pid;
 use tQueue\Worker\Loader;
 use tQueue\Helper\Tools;
+use tQueue\Helper\Validate;
 
 class Manager extends \tQueue\Base\Manager
 {
@@ -105,7 +107,7 @@ class Manager extends \tQueue\Base\Manager
 
     protected function getWorkerStatus($worker_name, $fork)
     {
-        $pid = $this->pid->getByWorker($worker->name, $f);
+        $pid = $this->pid->getByWorker($worker_name, $fork);
         return Tools::statusProcess($pid);
     }
 
@@ -132,7 +134,7 @@ class Manager extends \tQueue\Base\Manager
                     $this->tQueue->stat->getClient()
                 );
                 $w->run();
-                break;
+                exit();
             }
             $this->tQueue->logger->debug("New worker PID: {$pid}");
         }
