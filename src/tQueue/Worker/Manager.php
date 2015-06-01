@@ -108,7 +108,10 @@ class Manager extends \tQueue\Base\Manager
     protected function getWorkerStatus($worker_name, $fork)
     {
         $pid = $this->pid->getByWorker($worker_name, $fork);
-        return Tools::statusProcess($pid);
+        if ($pid) {
+            return Tools::statusProcess($pid);
+        }
+        return false;
     }
 
     public function start()
