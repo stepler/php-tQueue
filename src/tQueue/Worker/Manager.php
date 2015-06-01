@@ -26,15 +26,6 @@ class Manager extends \tQueue\Base\Manager
         $this->loader = new Loader($config["workers_dir"]);
     }
 
-    protected function getWorkers()
-    {
-        if (is_null($this->workers)) {
-            $this->workers = $this->loadWorkers();
-        }
-
-        return $this->workers;
-    }
-
     protected function loadWorkers()
     {
         $workers = array();
@@ -57,6 +48,31 @@ class Manager extends \tQueue\Base\Manager
         return $workers;
     }
 
+    protected function getWorkers()
+    {
+        if (is_null($this->workers)) {
+            $this->workers = $this->loadWorkers();
+        }
+
+        return $this->workers;
+    }
+
+    protected function getWorkersWithForks()
+    {
+        $list = array();
+        $workers = $this->getWorkers();
+        foreach ($workers as $worker)
+        {
+            for ($fork=1; $fork<=$worker->forks; $fork++) {
+                $w = clone($worker);
+                $w->fork = $fork;
+                $w->full_name = sprintf("%s # %s", $w->name, $w->fork);
+                $list[] = $w;
+            }
+        }
+        return $list;
+    }
+
     public function stop($stop_zombie=false)
     {
         $list = $stop_zombie 
@@ -76,43 +92,52 @@ class Manager extends \tQueue\Base\Manager
         $this->pid->remove($pid);
     }
 
-    protected function status($worker_name, $fork=1)
+    public function status()
     {
-        $pid = $this->pid->getByWorker($worker_name, $fork);
+        $result = array();
+        $workers = $this->getWorkersWithForks();
+        foreach ($workers as $worker) {
+            $result[$worker->full_name] = 
+                $this->getWorkerStatus($worker->name, $worker->fork);
+        }
+        return $result;
+    }
+
+    protected function getWorkerStatus($worker_name, $fork)
+    {
+        $pid = $this->pid->getByWorker($worker->name, $f);
         return Tools::statusProcess($pid);
     }
 
     public function start()
     {
-        $workers = $this->getWorkers();
+        $workers = $this->getWorkersWithForks();
 
         $this->stop(true);
 
         foreach ($workers as $worker)
         {
             $className = $worker->class_name;
-            for ($fork=1; $fork<=$worker->forks; $fork++)
-            {
-                if ($this->status($worker->name, $fork)) {
-                    continue;
-                }
 
-                $pid = \tQueue::fork();
-                if ($pid > 0) {
-                    $this->pid->add($pid, $worker->name, $fork);
-                }
-                else {
-                    $w = new $className(
-                        $this->tQueue->broker,
-                        $this->tQueue->logger, 
-                        $this->tQueue->stat->getClient()
-                    );
-
-                    $w->run();
-                    break;
-                }
-                $this->tQueue->logger->debug("New worker PID: {$pid}");
+            if ($this->getWorkerStatus($worker->name, $worker->fork)) {
+                continue;
             }
+
+            $pid = \tQueue::fork();
+            if ($pid > 0) {
+                $this->pid->add($pid, $worker->name, $worker->fork);
+            }
+            else {
+                $w = new $className(
+                    $this->tQueue->broker,
+                    $this->tQueue->logger, 
+                    $this->tQueue->stat->getClient()
+                );
+
+                $w->run();
+                break;
+            }
+            $this->tQueue->logger->debug("New worker PID: {$pid}");
         }
     }
 }
