@@ -24,10 +24,6 @@ class Loader
         $new_classes = array_diff(get_declared_classes(), $classes);
 
         $this->workers = $this->parseLoadedClasses($new_classes);
-
-        if (empty($this->workers)) {
-            throw new \RuntimeException("Unable to found workers");
-        }
     }
 
     protected function getWorkerFiles()
@@ -78,8 +74,9 @@ class Loader
 
     public function getWorkers()
     {
-        if (empty($this->workers)) {
+        if ($this->workers_is_loaded === false) {
             $this->loadWorkers();
+            $this->workers_is_loaded = true;
         }
 
         return $this->workers;

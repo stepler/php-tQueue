@@ -3,6 +3,7 @@ namespace tQueue\Helper;
 
 class Tools 
 {
+    
     public static function killProcess($pid)
     {
         exec("kill -9 {$pid}");

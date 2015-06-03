@@ -1,13 +1,17 @@
 <?php
 namespace tQueue\Stat;
 
+use tQueue\Stat\Manager;
 use tQueue\Helper\FS;
 
 class Server 
 {
+    static $process_name = "Statistics_Server";
+
     protected $socket;
 
     protected $logger;
+    protected $process;
 
     protected $save_interval = 60;
 
@@ -21,9 +25,10 @@ class Server
 
     protected $shutdown = false;
 
-    public function __construct($logger, $config)
+    public function __construct($tQueue, $config)
     {
-        $this->logger = $logger;
+        $this->logger = $tQueue->logger;
+        $this->process = $tQueue->process;
 
         $this->parseConfig($config);
         $this->data = new Data($this->readData());
@@ -48,14 +53,6 @@ class Server
 
     public function run()
     {
-        declare(ticks = 1);
-        pcntl_signal(SIGQUIT, array($this, "shutdown"));
-
-        $this->launch();
-    }
-
-    protected function launch()
-    {
         $socket = stream_socket_server($this->host, $errno, $errstr);
         if (!$socket) {
             throw new \RuntimeException("Unable to create socket server: $errstr ($errno)");
@@ -76,6 +73,7 @@ class Server
             }
 
             $this->saveData();
+            $this->shutdown();
         }
 
         fclose($socket);
@@ -116,6 +114,10 @@ class Server
 
     public function shutdown()
     {
+        if ($this->process->isLaunched(self::$process_name)) {
+            return;
+        }
+        $this->logger->info('Shutting down...');
         $this->shutdown = true;
     }
 }

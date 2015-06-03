@@ -7,13 +7,13 @@ $tq = tQueue::create(__DIR__."/config.ini");
 
 if ($cmd === "start") {
     $tq->startWorkers();
-    $tq->statStart();
+    $tq->startStat();
 }
 if ($cmd === "stop") {
-    $tq->statStop();
+    $tq->stopStat();
     $tq->stopWorkers();
 }
 if ($cmd === "stat") {
-    $tq->statData(true);
-    $tq->statusWorker(true);
+    $tq->statistics(true);
+    $tq->status(true);
 }

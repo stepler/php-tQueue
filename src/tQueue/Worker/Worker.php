@@ -2,6 +2,7 @@
 namespace tQueue\Worker;
 
 use tQueue\Helper\Validate;
+use tQueue\Process;
 
 class Worker 
 {
@@ -14,21 +15,32 @@ class Worker
     protected $broker;
 
     protected $forks;
+    protected $fork;
 
     protected $name;
 
     public $shutdown = false;
 
-    final public function __construct($broker, $logger, $stat_client)
+    final public function __construct($tQueue, $fork)
     {
-        $this->broker = $broker;
-        $this->logger = $logger;
-        $this->stat = $stat_client;
+        Validate::workerName($this->getName());
+
+        $this->fork = $fork;
+
+        $this->broker = $tQueue->broker;
+        $this->logger = $tQueue->logger;
+        $this->stat_client = $tQueue->stat->getClient();
+        $this->process = $tQueue->process;
     }
 
     final public function getForks()
     {
         return $this->forks;
+    }
+
+    final public function getFork()
+    {
+        return $this->fork;
     }
 
     final public function getName()
@@ -37,6 +49,11 @@ class Worker
             return $this->name;
         }
         return get_class($this);
+    }
+
+    final public function getForkName()
+    {
+        return $this->getName()."--{$this->fork}";
     }
 
     public function work()
@@ -66,13 +83,13 @@ class Worker
         $task->running();
         try {
             $result = $this->process($task->getId(), $task->getData());
-            $task->complete($result);
-            $this->stat->send($task->getQueue(), $this->getName(), $task->getStatus());
+            $task->complete();
+            $this->stat_client->send($task->getQueue(), $this->getName(), $task->getStatus());
             $this->logger->info("Task {task_id} is processed", array("task_id"=>$task->getId()));
         }
         catch (Exception $e) {
             $task->failed();
-            $this->stat->send($task->getQueue(), $this->getName(), $task->getStatus());
+            $this->stat_client->send($task->getQueue(), $this->getName(), $task->getStatus());
 
             $this->logger->error("Task {task_id} throw error: {error}", 
                 array("task_id"=>$task->getId(), "error"=>$task->getMessage()));
@@ -81,17 +98,18 @@ class Worker
 
     public function run()
     {
-        declare(ticks = 1);
-        pcntl_signal(SIGQUIT, array($this, 'shutdown'));
-
         usleep(mt_rand(0, 1000000));
         while ($this->work()) {
             usleep($this->interval * 1000000);
+            $this->shutdown();
         }
     }
 
     public function shutdown()
     {
+        if ($this->process->isLaunched($this->getForkName())) {
+            return;
+        }
         $this->logger->info('Shutting down...');
         $this->shutdown = true;
     }

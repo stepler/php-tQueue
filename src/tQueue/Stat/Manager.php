@@ -7,23 +7,11 @@ use tQueue\Helper\Validate;
 
 class Manager extends \tQueue\Base\Manager
 {
-    protected $socket;
-
-    protected $logger;
-
-    protected $pid_file;
+    protected $config;
 
     public function parseConfig($config)
     {
-        if (empty($config["pid_file"])) {
-            throw new \InvalidArgumentException("Unable to found 'pid_file' option in stat config");
-        }
-        Validate::makefile($config["pid_file"]);
-
         $this->config = $config;
-        $this->pid_file = $config["pid_file"];
-
-        $this->logger = $this->tQueue->logger;
     }
 
     public function getClient()
@@ -33,54 +21,41 @@ class Manager extends \tQueue\Base\Manager
 
     public function start()
     {
-        $pid = \tQueue::fork();
-        if ($pid === 0) {
-            $s = new Server($this->logger, $this->config);
-            $s->run();
-            exit();
+        if (!$this->process->isStopped(Server::$process_name)) {
+            return;
         }
 
-        $this->setPid($pid);
-        $this->logger->info("Statistics server is started");
+        $pid = $this->tQueue->launchProcess(array("TYPE"=>"stat"));
+        if ($this->process->statusProcess($pid)) {
+            $this->process->setPid($pid, Server::$process_name);
+            $this->logger->info("Statistics server is started. PID: {$pid}");
+        }
+        else {
+            $this->logger->error("Unable to start Statistics server process");
+        }
+    }
+
+    public function startServerProcess()
+    {
+        if (!$this->process->isStopped(Server::$process_name)) {
+            $this->logger->error("Trying launch not stopped server");
+            return;
+        }
+
+        $this->process->setLaunched(Server::$process_name);
+        $server = new Server($this->tQueue, $this->config);
+        $server->run();
+        $this->process->setStoped(Server::$process_name);
     }
 
     public function stop()
     {
-        $pid = $this->getPid();
-        if (empty($pid)) {
-            return;
-        }
-
-        posix_kill($pid, SIGQUIT);
-        $this->setPid(null);
-        $this->logger->info("Statistics server is stopped");
-    }
-
-    protected function setPid($pid)
-    {
-        if (empty($pid)) {
-            $pid = "";
-        }
-
-        $result = file_put_contents($this->pid_file, $pid);
-        if ($result === false) {
-            \tQueue\Helper\Tools::killProcess($pid);
-            throw new \Exception("Unable to save PID to {$this->pid_file}");
-        }
-    }
-
-    protected function getPid()
-    {
-        @$content = file_get_contents($this->pid_file);
-        if (empty($content)) {
-            return null;
-        }
-        return $content;
+        $this->process->setStopping(Server::$process_name);
     }
 
     public function getData()
     {
-        $s = new Server($this->logger, $this->config);
+        $s = new Server($this->tQueue, $this->config);
         return $s->getData()->getArray();
     }
 }

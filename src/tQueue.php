@@ -1,12 +1,7 @@
 <?php
 
-use tQueue\Config;
-use tQueue\Helper\Set;
-
 class tQueue 
 {
-    protected $config;
-
     protected $container;
     protected $name;
 
@@ -14,19 +9,19 @@ class tQueue
 
     protected function __construct($name, $config_data)
     {
-        if (!function_exists('pcntl_fork')) {
-            throw new \RuntimeException('PCNTL extension is not installed');
-        }
-
         $this->name = $name;
 
-        $this->container = new Set();
+        $this->container = new \tQueue\Helper\Set();
 
-        $this->container["config"] = new Config($config_data);
+        $this->container["config"] = new \tQueue\Config($config_data);
         $this->container["tQueue"] = $this;
 
         $this->container->singleton("logger", function($c) {
             return new \tQueue\Logger($c->config->logger);
+        });
+
+        $this->container->singleton("process", function($c) {
+            return new \tQueue\Process\Manager($c->tQueue, $c->config->process, "process");
         });
 
         $this->container->singleton("stat", function($c) {
@@ -95,22 +90,32 @@ class tQueue
         $this->worker->start();
     }
 
+    public function startWorkerProcess($worker_name, $fork)
+    {
+        $this->worker->startWorkerProcess($worker_name, $fork);
+    }
+
     public function stopWorkers()
     {
         $this->worker->stop();
     }
 
-    public function statStart()
+    public function startStat()
     {
         $this->stat->start();
     }
 
-    public function statStop()
+    public function startStatProcess()
+    {
+        $this->stat->startServerProcess();
+    }
+
+    public function stopStat()
     {
         $this->stat->stop();
     }
 
-    public function statData($print=false)
+    public function statistics($print=false)
     {
         $data = $this->stat->getData();
         if ($print === true) {
@@ -119,22 +124,28 @@ class tQueue
         return $data;
     }
 
-    public function statusWorker($print=false)
+    public function status($print=false)
     {
-        $data = $this->worker->status();
+        $data = $this->process->status();
         if ($print === true) {
             \tQueue\Printer::status($data);
         }
         return $data;
     }
 
-    public static function fork()
+    public function launchProcess($args=array())
     {
-        $pid = pcntl_fork();
-        if($pid === -1) {
-            throw new \RuntimeException('Unable to fork worker');
+        $bin = realpath(__DIR__."/../bin/tqueue");
+        if (!$bin) {
+            throw new \RuntimeException("Unable to find process launcher");
         }
 
-        return $pid;
+        $args["CONFIG"] = serialize($this->config->getArray());
+        $args = implode(" ", array_map(
+            function($v, $k) { return sprintf("%s=%s", $k, escapeshellarg($v)); }, $args, array_keys($args)));
+
+        $output = exec("{$args} php {$bin} > /dev/null & echo $!");
+
+        return intval($output) > 0 ? intval($output) : 0 ;
     }
 }

@@ -20,6 +20,15 @@ class FS
         return glob(self::joinPaths($path, $mask));
     }
 
+    public static function findFile($path, $mask)
+    {
+        $list = self::findFiles($path, $mask);
+        if (!empty($list)) {
+            return $list[0];
+        }
+        return null;
+    }
+
     public static function readFile($filename)
     {
         if (file_exists($filename) && is_readable($filename)) {
@@ -44,5 +53,10 @@ class FS
     public static function deleteFile($filename)
     {
         unlink($filename);
+    }
+
+    public static function renameFile($old_file, $new_file)
+    {
+        rename($old_file, $new_file);
     }
 }

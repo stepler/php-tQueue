@@ -37,7 +37,8 @@ class Data
 
         $this->data[$queue]["tasks"][$type] += 1;
 
-        if ($type !== Task::STATUS_WAITING) {
+        if ($type !== Task::STATUS_WAITING &&
+            $this->data[$queue]["tasks"][Task::STATUS_WAITING] > 0) {
             $this->data[$queue]["tasks"][Task::STATUS_WAITING] -= 1;
         }
     }

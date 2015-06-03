@@ -1,0 +1,63 @@
+#!/usr/bin/env php
+<?php
+date_default_timezone_set("GMT");
+
+// Find and initialize Composer
+$files = array(
+    __DIR__ . "/../vendor/autoload.php",
+    __DIR__ . "/../../vendor/autoload.php",
+    __DIR__ . "/../../../autoload.php",
+    __DIR__ . "/../../../../autoload.php",
+);
+
+$found = false;
+foreach ($files as $file) {
+    if (file_exists($file)) {
+        require_once $file;
+        break;
+    }
+}
+
+if (!class_exists("Composer\Autoload\ClassLoader", false)) {
+    die(
+        "You need to set up the project dependencies using the following commands:" . PHP_EOL .
+            "curl -s http://getcomposer.org/installer | php" . PHP_EOL .
+            "php composer.phar install" . PHP_EOL
+    );
+}
+
+$CONFIG_RAW = getenv("CONFIG");
+if(empty($CONFIG_RAW)) {
+    die("Set CONFIG env var containing the serialized config.\n");
+}
+@$CONFIG = unserialize($CONFIG_RAW);
+if (!is_array($CONFIG)) {
+    die("Invalid CONFIG env var.\n");
+}
+
+$TYPE = getenv("TYPE");
+if(empty($TYPE)) {
+    die("Set TYPE env var containing the process type.\n");
+}
+if (!in_array($TYPE, array("stat", "worker"))) {
+    die("TYPE env var containing invalid process type.\n");
+}
+
+$TQ = tQueue::create($CONFIG);
+
+if ($TYPE == "stat") {
+    $TQ->startStatProcess();
+    return;
+}
+
+if ($TYPE == "worker") {
+    $WORKER = getenv("WORKER");
+    if(empty($WORKER)) {
+        die("Set WORKER env var containing the list of queues to work.\n");
+    }
+    $FORK = getenv("FORK");
+    if(empty($FORK)) {
+        die("Set FORK env var containing the list of queues to work.\n");
+    }
+    $TQ->startWorkerProcess($WORKER, $FORK);
+}

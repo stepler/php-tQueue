@@ -26,15 +26,13 @@ class Printer
     static function status($data)
     {
         $draw_data = array();
-        foreach ($data as $worker_info => $status) {
-            list($name, $fork) = explode(" # ", $worker_info);
-            $row = array($name, $fork,
-                ($status ? 'working' : 'stopped' ));
-            $draw_data[] = $row;
+        foreach ($data as $info) {
+            $draw_data[] = array(
+                $info["group"], $info["name"], $info["status"]);
         }
 
         $table = new \Console_Table();
-        $table->setHeaders(array("WORKERS", "FORK", "STATUS"));
+        $table->setHeaders(array("GROUP", "PROCESS", "STATUS"));
         $table->addData($draw_data);
         echo $table->getTable();
     }

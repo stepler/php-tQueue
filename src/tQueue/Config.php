@@ -23,7 +23,7 @@ class Config implements \ArrayAccess
         }
         $config = parse_ini_string($content, true);
         if ($config === false) {
-            throw new \InvalidArgumentException("Error on parse config file {$filename}");
+            throw new \InvalidArgumentException("Error on parse config from file {$filename}");
         }
         return $config;
     }
@@ -42,6 +42,14 @@ class Config implements \ArrayAccess
         if (!isset($config["stat"])) {
             throw new \InvalidArgumentException("Unable to found 'stat' section in config");
         }
+        if (!isset($config["process"])) {
+            throw new \InvalidArgumentException("Unable to found 'process' section in config");
+        }
+    }
+
+    public function getArray()
+    {
+        return $this->container;
     }
 
     public function __get($name)
