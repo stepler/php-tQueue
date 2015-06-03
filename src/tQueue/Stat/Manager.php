@@ -53,9 +53,15 @@ class Manager extends \tQueue\Base\Manager
         $this->process->setStopping(Server::$process_name);
     }
 
+    public function clearData()
+    {
+        $client = $this->getClient();
+        $client->clear();
+    }
+
     public function getData()
     {
-        $s = new Server($this->tQueue, $this->config);
-        return $s->getData()->getArray();
+        $server = new Server($this->tQueue, $this->config);
+        return $server->getData()->getArray();
     }
 }

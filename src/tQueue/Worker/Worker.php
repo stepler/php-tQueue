@@ -3,8 +3,9 @@ namespace tQueue\Worker;
 
 use tQueue\Helper\Validate;
 use tQueue\Process;
+use Exception;
 
-class Worker 
+abstract class Worker 
 {
     protected $queue;
 
@@ -17,13 +18,20 @@ class Worker
     protected $forks;
     protected $fork;
 
+    protected $remove_completed_task = false;
+
     protected $name;
 
     public $shutdown = false;
 
-    final public function __construct($tQueue, $fork)
+    final public function __construct($tQueue, $config, $fork)
     {
         Validate::workerName($this->getName());
+
+        if (isset($config["remove_task_after_complete"]) &&
+            !!($config["remove_task_after_complete"]) == true) {
+            $this->remove_completed_task = true;
+        }
 
         $this->fork = $fork;
 
@@ -62,8 +70,7 @@ class Worker
             return false;
         }
 
-        $task = $this->get_work();
-
+        $task = $this->broker->process($this->queue);
         if ($task) {
             $this->do_work($task);
         }
@@ -71,38 +78,41 @@ class Worker
         return true;
     }
 
-    protected function get_work()
-    {
-        return $this->broker->process($this->queue);
-    }
-
     protected function do_work($task)
     {
-        $this->logger->info("Running task {task_id}", array("task_id"=>$task->getId()));
+        $this->logger->info("Running task {queue}#{task_id}", 
+            array("queue"=>$this->queue, "task_id"=>$task->getId()));
 
         $task->running();
         try {
             $result = $this->process($task->getId(), $task->getData());
             $task->complete();
-            $this->stat_client->send($task->getQueue(), $this->getName(), $task->getStatus());
-            $this->logger->info("Task {task_id} is processed", array("task_id"=>$task->getId()));
+            $this->stat_client->update($task->getQueue(), $this->getName(), $task->getStatus());
+            $this->logger->info("Competed task {queue}#{task_id}", 
+                array("queue"=>$this->queue, "task_id"=>$task->getId()));
+
+            if ($this->remove_completed_task) {
+                $this->broker->remove($task->getId());
+            }
         }
         catch (Exception $e) {
             $task->failed();
-            $this->stat_client->send($task->getQueue(), $this->getName(), $task->getStatus());
-
-            $this->logger->error("Task {task_id} throw error: {error}", 
-                array("task_id"=>$task->getId(), "error"=>$task->getMessage()));
+            $this->stat_client->update($task->getQueue(), $this->getName(), $task->getStatus());
+            $this->logger->error("Throw Error task {queue}#{task_id}: {error}", 
+                array("queue"=>$this->queue, "task_id"=>$task->getId(), "error"=>$task->getMessage()));
         }
     }
 
     public function run()
     {
         usleep(mt_rand(0, 1000000));
+
+        $this->setUp();
         while ($this->work()) {
             usleep($this->interval * 1000000);
             $this->shutdown();
         }
+        $this->tearDown();
     }
 
     public function shutdown()
@@ -113,4 +123,8 @@ class Worker
         $this->logger->info('Shutting down...');
         $this->shutdown = true;
     }
+
+    protected function setUp() {};
+    protected function tearDown() {};
+    abstract protected function process($taskId, $taskData);
 }

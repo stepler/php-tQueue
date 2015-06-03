@@ -19,27 +19,38 @@ class Client
         $this->host = $config["host"];
     }
 
-    public function send($queue, $worker, $type)
+    public function update($queue, $worker, $type)
     {
         $data = func_get_args();
-        $data_to_send = implode("#", $data);
+        $message = implode("#", $data);
+        $this->send("update", $message);
+        return true;
+    }
 
+    public function clear()
+    {
+        $this->send("clear", "");
+        return true;
+    }
+
+    protected function send($type, $message)
+    {
+        $raw_message = "{$type}@{$message}";
         @$socket = stream_socket_client($this->host, $errno, $errstr, 2);
         if (!$socket) {
-            $this->stack[] = $data_to_send;
+            $this->stack[] = $raw_message;
             $this->logger->error("Unable to send statistic: ({$errno}) {$errstr}");
             return false;
         }
 
         if (!empty($this->stack)) {
             foreach ($this->stack as $stack_data) {
-                fwrite($socket, $data_to_send);
+                fwrite($socket, $raw_message);
             }
             $this->stack = array();
         }
 
-        fwrite($socket, $data_to_send);
+        fwrite($socket, $raw_message);
         fclose($socket);
-        return true;
     }
 }

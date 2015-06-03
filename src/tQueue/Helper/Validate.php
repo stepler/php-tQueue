@@ -23,13 +23,13 @@ class Validate
     {
         if (!file_exists($path) ||
             !is_dir($path)) {
-            throw new \InvalidArgumentException("Invalid directory path: {$path}");
+            throw new \InvalidArgumentException("Invalid directory: {$path}");
         }
         if ($is_readable && !is_readable($path)) {
-            throw new \InvalidArgumentException("Directory is not readable");
+            throw new \InvalidArgumentException("Directory is not readable: {$path}");
         }
         if ($is_writable && !is_writable($path)) {
-            throw new \InvalidArgumentException("Directory is not writable");
+            throw new \InvalidArgumentException("Directory is not writable: {$path}");
         }
     }
 
@@ -40,10 +40,10 @@ class Validate
             throw new \InvalidArgumentException("Invalid file path: {$path}");
         }
         if ($is_readable && !is_readable($path)) {
-            throw new \InvalidArgumentException("File is not readable");
+            throw new \InvalidArgumentException("File is not readable: {$path}");
         }
         if ($is_writable && !is_writable($path)) {
-            throw new \InvalidArgumentException("File is not writable");
+            throw new \InvalidArgumentException("File is not writable: {$path}");
         }
     }
 

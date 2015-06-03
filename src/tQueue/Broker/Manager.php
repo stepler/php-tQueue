@@ -67,9 +67,14 @@ class Manager extends \tQueue\Base\Manager
         $task = $this->createTask($queue, $data);
         $this->broker->create($task->getId(), $task->getQueue(), $task->getStatus(), $task->getData());
 
-        $this->stat->send($task->getQueue(), null, $task->getStatus());
+        $this->stat->update($task->getQueue(), null, $task->getStatus());
         
         return $task;
+    }
+
+    public function remove($task)
+    {
+        $this->broker->remove($task->getId(), $task->getQueue());
     }
 
     public function process($queue)

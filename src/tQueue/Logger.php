@@ -10,6 +10,8 @@ class Logger extends Psr\Log\AbstractLogger
 
     protected $handle;
 
+    protected $process_log = "/dev/null";
+
     public function __construct($config)
     {
         if (!empty($config["verbose"])) {
@@ -21,9 +23,19 @@ class Logger extends Psr\Log\AbstractLogger
             $this->handle = fopen($config["file"], "a");
         }
 
+        if (isset($config["process_log"])) {
+            Validate::makefile($config["process_log"]);
+            $this->process_log = $config["process_log"];
+        }
+
         if (empty($this->handle)) {
             $this->handle = STDOUT;
         }
+    }
+
+    public function getProcessLog()
+    {
+        return $this->process_log;
     }
 
     public function log($level, $message, array $context=array())

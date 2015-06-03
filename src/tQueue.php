@@ -124,6 +124,11 @@ class tQueue
         return $data;
     }
 
+    public function clearStatistics($print=false)
+    {
+        $this->stat->clearData();
+    }
+
     public function status($print=false)
     {
         $data = $this->process->status();
@@ -144,7 +149,8 @@ class tQueue
         $args = implode(" ", array_map(
             function($v, $k) { return sprintf("%s=%s", $k, escapeshellarg($v)); }, $args, array_keys($args)));
 
-        $output = exec("{$args} php {$bin} > /dev/null & echo $!");
+        $process_log = $this->logger->getProcessLog()
+        $output = exec("{$args} php {$bin} >> {$process_log} & echo $!");
 
         return intval($output) > 0 ? intval($output) : 0 ;
     }

@@ -45,14 +45,24 @@ class LocalFS extends Base
 
     public function update($id, $queue, $status)
     {
-        $current_task = $this->findTaskFile($queue, $id, "*");
-        $new_task = $this->generateTaskFilePath($queue, $id, $status);
+        $task_file = $this->findTaskFile($queue, $id, "*");
+        $new_task_file = $this->generateTaskFilePath($queue, $id, $status);
 
-        if (empty($current_task)) {
+        if (empty($task_file)) {
             return false;
         }
 
-        return $this->rename($current_task, $new_task);
+        return FS::renameFile($task_file, $new_task_file);
+    }
+
+    public function delete($id, $queue)
+    {
+        $task_file = $this->findTaskFile($queue, $id, "*");
+        if (empty($task_file)) {
+            return false;
+        }
+
+        return FS::deleteFile($task_file);
     }
 
     protected function generateTaskFilePath($queue, $id, $status)
@@ -118,11 +128,6 @@ class LocalFS extends Base
 
         $data = $this->packData($data);
         return FS::writeFile($task_file, $data);
-    }
-
-    protected function rename($old_task_file, $new_task_file)
-    {
-        return rename($old_task_file, $new_task_file);
     }
 
     protected function createQueueDir($task_file)

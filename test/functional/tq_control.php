@@ -17,3 +17,6 @@ if ($cmd === "stat") {
     $tq->statistics(true);
     $tq->status(true);
 }
+if ($cmd === "clear") {
+    $tq->clearStatistics();
+}

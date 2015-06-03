@@ -15,4 +15,6 @@ abstract class Base
     abstract public function create($id, $queue, $status, $data);
 
     abstract public function update($id, $queue, $status);
+
+    abstract public function delete($id, $queue);
 }

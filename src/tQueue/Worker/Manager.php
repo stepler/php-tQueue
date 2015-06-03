@@ -4,7 +4,6 @@ namespace tQueue\Worker;
 use stdClass;
 use tQueue\Worker\Pid;
 use tQueue\Worker\Loader;
-use tQueue\Helper\Tools;
 use tQueue\Helper\Validate;
 
 class Manager extends \tQueue\Base\Manager
@@ -12,6 +11,7 @@ class Manager extends \tQueue\Base\Manager
     protected $workers;
 
     protected $loader;
+    protected $config;
 
     public function parseConfig($config)
     {
@@ -19,6 +19,7 @@ class Manager extends \tQueue\Base\Manager
             throw new \InvalidArgumentException("Unable to found 'workers_dir' option in workers config");
         }
 
+        $this->config = $config;
         $this->loader = new Loader($config["workers_dir"]);
     }
 
@@ -28,11 +29,11 @@ class Manager extends \tQueue\Base\Manager
         $classes = $this->loader->getWorkers();
         foreach ($classes as $worker_class)
         {
-            $worker = new $worker_class($this->tQueue, 1);
+            $worker = new $worker_class($this->tQueue, $this->config, 1);
             $list[] = $worker;
 
             for ($fork=2; $fork<=$worker->getForks(); $fork++) {
-                $list[] = new $worker_class($this->tQueue, $fork);
+                $list[] = new $worker_class($this->tQueue, $this->config, $fork);
             }
         }
         return $list;

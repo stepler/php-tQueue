@@ -81,8 +81,25 @@ class Server
 
     protected function processData($data)
     {
-        list($queue, $worker, $type) = explode("#", $data);
+        list($type, $message) = explode("@", $data);
+        if ($type == "counter") {
+            $this->updateCounter($message)
+        }
+        if ($type == "clear") {
+            $this->clearCounter($message)
+        }
+    }
+
+    protected function updateCounter($message)
+    {
+        list($queue, $worker, $type) = explode("#", $message);
         $this->data->inc($queue, $worker, $type);
+    }
+
+    protected function clearCounter()
+    {
+        $this->data = new Data("");
+        $this->saveData(true);
     }
 
     protected function readData()
