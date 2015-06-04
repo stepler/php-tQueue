@@ -124,7 +124,7 @@ abstract class Worker
         $this->shutdown = true;
     }
 
-    protected function setUp() {};
-    protected function tearDown() {};
+    protected function setUp() {}
+    protected function tearDown() {}
     abstract protected function process($taskId, $taskData);
 }

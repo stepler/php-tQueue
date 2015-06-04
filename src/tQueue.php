@@ -138,6 +138,11 @@ class tQueue
         return $data;
     }
 
+    public function getProcessBootstrapFile()
+    {
+        return $this->process->getBootstrap();
+    }
+
     public function launchProcess($args=array())
     {
         $bin = realpath(__DIR__."/../bin/tqueue");
@@ -149,7 +154,7 @@ class tQueue
         $args = implode(" ", array_map(
             function($v, $k) { return sprintf("%s=%s", $k, escapeshellarg($v)); }, $args, array_keys($args)));
 
-        $process_log = $this->logger->getProcessLog()
+        $process_log = $this->process->getLog();
         $output = exec("{$args} php {$bin} >> {$process_log} & echo $!");
 
         return intval($output) > 0 ? intval($output) : 0 ;

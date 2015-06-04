@@ -8,6 +8,9 @@ class Manager extends \tQueue\Base\Manager
 {
     protected $path;
 
+    protected $log = "/dev/null";
+    protected $bootstrap;
+
     public function parseConfig($config)
     {
         if (empty($config["path"])) {
@@ -16,6 +19,26 @@ class Manager extends \tQueue\Base\Manager
 
         Validate::directory($config["path"]);
         Process::setPath($config["path"]);
+
+        if (isset($config["log"])) {
+            Validate::makefile($config["log"]);
+            $this->log = $config["log"];
+        }
+
+        if (isset($config["bootstrap"])) {
+            Validate::file($config["bootstrap"]);
+            $this->bootstrap = $config["bootstrap"];
+        }
+    }
+
+    public function getLog()
+    {
+        return $this->log;
+    }
+
+    public function getBootstrap()
+    {
+        return $this->bootstrap;
     }
 
     protected function getProcess($name)

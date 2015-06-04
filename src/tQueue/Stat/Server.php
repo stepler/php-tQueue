@@ -83,10 +83,10 @@ class Server
     {
         list($type, $message) = explode("@", $data);
         if ($type == "counter") {
-            $this->updateCounter($message)
+            $this->updateCounter($message);
         }
         if ($type == "clear") {
-            $this->clearCounter($message)
+            $this->clearCounter($message);
         }
     }
 

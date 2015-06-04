@@ -42,8 +42,11 @@ if(empty($TYPE)) {
 if (!in_array($TYPE, array("stat", "worker"))) {
     die("TYPE env var containing invalid process type.\n");
 }
-
 $TQ = tQueue::create($CONFIG);
+$bootstrap = $TQ->getProcessBootstrapFile();
+if ($bootstrap) {
+    require_once $bootstrap;
+}
 
 if ($TYPE == "stat") {
     $TQ->startStatProcess();

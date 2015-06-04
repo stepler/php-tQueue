@@ -22,8 +22,7 @@ class Client
     public function update($queue, $worker, $type)
     {
         $data = func_get_args();
-        $message = implode("#", $data);
-        $this->send("update", $message);
+        $this->send("counter", implode("#", $data));
         return true;
     }
 
@@ -36,6 +35,7 @@ class Client
     protected function send($type, $message)
     {
         $raw_message = "{$type}@{$message}";
+        var_dump($raw_message);
         @$socket = stream_socket_client($this->host, $errno, $errstr, 2);
         if (!$socket) {
             $this->stack[] = $raw_message;
